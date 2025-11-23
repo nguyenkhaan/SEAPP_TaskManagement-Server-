@@ -86,11 +86,6 @@ class Verify(Resource):
                 f"https://{os.getenv('WEB_URL')}?verified=false", 
                 code=302
             )
-            return {
-                "success": "error",
-                "message": "Registration failed. The email provided is already in use.",
-                "data": None
-            }, 409
 
         new_user = createUser(name, email, password)
 
@@ -101,20 +96,6 @@ class Verify(Resource):
                 f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
                 code=302
             )
-
-            return {
-                "success": True,
-                "message" : "User register successfully.",
-                "data": {
-                    "user": new_user
-                    
-                },
-                "tokens": {
-                    "access_token": access_token,
-                    "token_type": "Bearer", 
-                    "expires_in": 60*60*24*7,
-                }
-            }, 201
         else:
             return redirect(
                 f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=false", 
