@@ -1,12 +1,23 @@
 from flask_restful import reqparse
 from werkzeug.datastructures import FileStorage
 
+
+
 # REGISTER PARSER
 register_parser = reqparse.RequestParser()
 register_parser.add_argument('name', type=str, required=True, help="Name cannot be blank", location='json')
 register_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json' )
 register_parser.add_argument('password', type=str, required=True, help="Password cannot be blank", location='json')
 
+# VERIFY PARSER
+verify_parser = reqparse.RequestParser()
+verify_parser.add_argument(
+    'token', 
+    type=str, 
+    required=True, 
+    help='Verification token is required in the URL query.',
+    location='args' 
+)
 
 # LOGIN PARSER
 login_parser = reqparse.RequestParser()
