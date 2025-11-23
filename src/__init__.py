@@ -1,6 +1,7 @@
 from flask import Flask 
 from .config.dev_config import DevConfig
 from .config.cloudinary_config import cloudinary_config
+from .config.mail import mail_config
 from dotenv import load_dotenv 
 from .models import db, db_config
 from flask_migrate import Migrate
@@ -8,7 +9,7 @@ import os
 from datetime import timedelta
 from flask_jwt_extended import JWTManager
 from authlib.integrations.flask_client import OAuth
-
+from flask_mail import Mail, Message
 
 
 def create_app(config_object=DevConfig):
@@ -17,6 +18,7 @@ def create_app(config_object=DevConfig):
     
     # Tạo đối tượng app BÊN TRONG hàm
     app = Flask(__name__)
+    app.config['SECRET_KEY'] = os.getenv('APP_SECRET_KEY')
 
     db_config(app)
     app.config.from_object(config_object)
@@ -38,6 +40,8 @@ def create_app(config_object=DevConfig):
         server_metadata_uri = 'https://accounts.google.com/.well-known/openid-configuration',
         client_kwargs = {'scope':'openid profile email'} 
     ) 
+
+    mail_config(app)
 
     # 4. Đăng ký Blueprints/API ở đây
     from .api import api_bp
