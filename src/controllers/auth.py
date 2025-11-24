@@ -1,10 +1,10 @@
 from flask import Blueprint, url_for, current_app, redirect
 from flask_restful import Api, Resource
-from .parsers import register_parser, login_parser, verify_parser
+from .parsers import register_parser, login_parser, verify_parser, reset_password_parser, forgot_password_parser, set_new_password_parser
 from werkzeug.security import generate_password_hash
-from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar
-from ..services.jwt_service import decode_verification_token
-from flask_jwt_extended import create_access_token
+from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword
+from ..services.jwt_service import decode_verification_token, decode_reset_password_token
+from flask_jwt_extended import create_access_token, decode_token
 import os
 from dotenv import load_dotenv 
 import secrets
@@ -25,7 +25,7 @@ class Register(Resource):
 
         if(getUserByEmail(email)):
             return {
-                "success": "error",
+                "success": False,
                 "message": "Registration failed. The email provided is already in use.",
                 "data": None
             }, 409
@@ -234,7 +234,93 @@ class AuthorizeGoogle(Resource):
                 "message": "An error occurred during login."
             }, 500
 
+class ForgotPassword(Resource):
+    def post(self):
+        args = forgot_password_parser.parse_args()
+        email = args['email']
+        user = getUserByEmail(email) 
+        if(user == None):
+            return {
+                "success": False,
+                "message": "Email not found.",
+                "data": None
+            }
+        user_id = user['id']
+        name = user['name']
+        custom_claims = {
+            'user_id': user_id,
+            "purpose": "reset_password"
+        }
+        reset_password_token = create_access_token(identity=str(user_id), additional_claims=custom_claims, expires_delta=timedelta(minutes=30))
+        reset_password_page_url = f"https://youtube.com/forgot-password?reset_password_token={reset_password_token}"
+
+        msg = Message('Reset Your NoTask Password', recipients=[email])
+        msg.html = f"""<h1>NoTask</h1>
+    
+            <h2>Action Required: Reset Your NoTask Password</h2>
             
+            <p>Hi {name},</p>
+
+            <p>We received a request to <b>reset the password</b> for your NoTask account associated with this email address.</p>
+
+            <p>If you made this request, please click the link below to set a new password.</p>
+
+            <h3>Reset Your Password Now</h3>
+
+            <p>
+                <a href="{reset_password_page_url}">[ Reset Password ]</a>
+            </p>
+
+            <p>
+                This link will expire in 30 minutes to ensure the security of your account. If the link expires, you will need to submit a new password reset request.
+            </p>
+
+            <hr>
+
+            <h3>Did Not Request This?</h3>
+            <p>
+                If you <b>did not request</b> a password reset, please <b>ignore this email</b>. Your password will remain unchanged.
+                For security reasons, do not forward this email to anyone.
+            </p>
+            
+            <p>If you have any questions or concerns about your account security, please contact our support team immediately.</p>
+
+            <p>Thank you,</p>
+            <p>The NoTask Team</p>
+
+            <p><small>*Note: This is an automated email. Please do not reply to this address.</small></p>"""
+        mail.send(msg)
+
+        return {
+            "message": "Reset password email sent. Please check your inbox.", 
+            "reset_password_token": reset_password_token
+            }, 200
+
+# Khi người dùng bấm vào link reset mật khẩu trong mail sẽ được điều hướng tới trang reset mật khẩu có url chứa query params là token chứa id người dùng đó, sau khi người dùng nhập mật khẩu mới thì mới gửi req chứa token đó và password mới về server thông qua ResetPassword endpoint. Server nhận được token đó sẽ bóc ra kiểm tra purpose có đúng chưa, nếu đúng thì lấy user_id từ token ra, đặt lại mật khẩu cho người dùng đó bằng mật khẩu mới.
+
+class SetNewPassword(Resource):
+    def post(self):
+        try:
+            args = set_new_password_parser.parse_args()
+            reset_password_token = args['reset_password_token']
+            new_password = args['new_password']
+
+            payload = decode_reset_password_token(reset_password_token)
+
+            user_id = payload['user_id']
+
+            result = setNewPassword(id=user_id, new_password = new_password)
+
+            if(result):
+                return result
+            
+        except Exception:
+            return {"success": False, "message": "Invalid or malformed token."}, 401
+        
+
+
+
+
 
         
 
@@ -243,3 +329,5 @@ auth_api.add_resource(Verify, '/verify')
 auth_api.add_resource(Login, '/login')
 auth_api.add_resource(LoginGoogle, '/login-google')
 auth_api.add_resource(AuthorizeGoogle, '/authorize-google')
+auth_api.add_resource(ForgotPassword, '/forgot-password')
+auth_api.add_resource(SetNewPassword, '/set-new-password')

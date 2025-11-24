@@ -163,7 +163,18 @@ def uploadAvatar(id, file='', url=''):
         "error": f"{e}"
     }
 
-
-
-
+def setNewPassword(id:int, new_password:str):
+    user = User.query.get(id)
+    if(user == None): 
+        return None
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+    return {
+            "success": True,
+            "message": "Your password has been updated successfully.",
+            "data": {
+                "user": user.to_dict()
+            }            
+        }
+    
         

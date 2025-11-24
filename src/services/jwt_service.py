@@ -26,4 +26,25 @@ def decode_verification_token(token):
         print(f"Lỗi giải mã token: {e}")
         return None       
 
-    
+
+def decode_reset_password_token(token: str):
+    try:
+        payload = decode_token(token)
+        purpose = payload.get('purpose')
+
+        if purpose != 'reset_password':
+            return None
+
+        user_id = payload.get('user_id')
+        return {
+            'user_id': user_id
+        }
+
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+    except Exception as e:
+        print(f"Lỗi giải mã token: {e}")
+        return None       
+

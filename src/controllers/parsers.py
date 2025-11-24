@@ -50,3 +50,12 @@ reset_password_parser.add_argument('new_password', type=str, required=True, help
 #UPLOAD_AVATAR
 upload_avatar_parser = reqparse.RequestParser()
 upload_avatar_parser.add_argument('avatar', type=FileStorage, location='files', required=True, help="You must upload an image")
+
+# FORGOT PASSWORD
+forgot_password_parser = reqparse.RequestParser()
+forgot_password_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json')
+
+#  SET_NEW_PASSWORD
+set_new_password_parser = reqparse.RequestParser()
+set_new_password_parser.add_argument('reset_password_token', type=str, required=True, help="Reset_password_token cannot be blank", location='json')
+set_new_password_parser.add_argument('new_password', type=str, required=True, help="New password cannot be blank", location='json')
