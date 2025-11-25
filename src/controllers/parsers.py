@@ -61,3 +61,18 @@ set_new_password_parser.add_argument('reset_password_token', type=str, required=
 set_new_password_parser.add_argument('new_password', type=str, required=True, help="New password cannot be blank", location='json')
 
 # CREATE NEW TEAM 
+create_new_team_parser = reqparse.RequestParser() 
+create_new_team_parser.add_argument("icon" , type=FileStorage, required = False, location='files') 
+create_new_team_parser.add_argument("banner" , type=FileStorage , required = False , location = 'files') 
+create_new_team_parser.add_argument("teamName", type = str , required = True , help = 'Missing name' , location = 'form') 
+create_new_team_parser.add_argument("teamDescription" , type = str , required = False , location = 'form') 
+create_new_team_parser.add_argument("userID" , type=int, required = True , location = 'form') 
+
+# UPDATE THE TEAM 
+update_team_parser = reqparse.RequestParser() 
+update_team_parser.add_argument("icon" , type=FileStorage , required = False , location='files') 
+update_team_parser.add_argument("banner" , required = False , type = FileStorage , location = 'files') 
+update_team_parser.add_argument("teamName" , required = False , type=str , location = 'form') 
+update_team_parser.add_argument("teamDescription" , required = False , type = str , location = 'form') 
+update_team_parser.add_argument("leaderID" , required = False , type = int , location = 'form') 
+update_team_parser.add_argument("viceLeaderID" , required = False , type = int , location = 'form') 

@@ -1,5 +1,5 @@
 from . import db
-
+from ..utils import getImageUrl 
 class Team(db.Model):
     __tablename__ = 'teams'
     
@@ -27,9 +27,8 @@ class Team(db.Model):
     def to_dict(self): 
         return {
             "teamID": self.id, 
-            "iconUrl": self.icon_url, 
+            "iconUrl": getImageUrl(self.icon_url), #Phai truy vao de lay du lieu 
             "teamName": self.name, 
             "teamDescription": self.description, 
-            "tasks": self.tasks, 
-            "name": self.name 
+            "banner": getImageUrl(self.banner_url) 
         }
