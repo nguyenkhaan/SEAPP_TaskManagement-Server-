@@ -59,3 +59,5 @@ forgot_password_parser.add_argument('email',type=str, required=True, help="Email
 set_new_password_parser = reqparse.RequestParser()
 set_new_password_parser.add_argument('reset_password_token', type=str, required=True, help="Reset_password_token cannot be blank", location='json')
 set_new_password_parser.add_argument('new_password', type=str, required=True, help="New password cannot be blank", location='json')
+
+# CREATE NEW TEAM 

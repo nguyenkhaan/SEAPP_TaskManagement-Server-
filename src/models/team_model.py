@@ -23,3 +23,13 @@ class Team(db.Model):
     # Relationship với leader và vice leader
     leader = db.relationship('User', foreign_keys=[leader_id], backref='led_teams')
     vice_leader = db.relationship('User', foreign_keys=[vice_leader_id], backref='vice_led_teams')
+    
+    def to_dict(self): 
+        return {
+            "teamID": self.id, 
+            "iconUrl": self.icon_url, 
+            "teamName": self.name, 
+            "teamDescription": self.description, 
+            "tasks": self.tasks, 
+            "name": self.name 
+        }

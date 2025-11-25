@@ -14,3 +14,13 @@ class Task(db.Model):
     
     # Khóa ngoại TeamID
     team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
+    def to_dict(self): 
+        return {
+            "taskID": self.id, 
+            "title": self.title, 
+            "description": self.description, 
+            "dueTime": self.due_time, 
+            "priority": [self.important , self.urgent], 
+            "status": self.status, 
+            #Them cot creaatedAt sau 
+         }

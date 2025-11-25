@@ -43,3 +43,20 @@ flask -A main.py db init	Tạo hệ thống migration (làm 1 lần)
 flask -A main.py db migrate	Tạo file migration khi model thay đổi (Các lần sau có chạy lại cũng không bị mất dữ liệu)
 flask -A main.py db upgrade: Cập nhật dữ liệu xuống database theo file migration 
 ```
+
+### 2. Cách để bật gợi ý trong Python 
+Ctrl + Shift + P -> Select Python: Interprepter -> Chọn vào thư mục env/ 
+### 3. Gửi dữ liệu về 
+
+Flask sẽ tự convert dữ liệu đó sang JSON nếu đó là dữ liệu có thể convert được (Ví dụ: dictionary, list, string...) 
+Ta cũng có thể tự lấy mã trạng thái `return data,status_code`
+
+Để tránh lỗi circular import database, hãy import và cấu hình db trong file __init__.py, sau đó thư mục main gọi hàm config đó thôi. Các thư mục khác import db từ đó để sử dụng 
+
+**Tao bang khong dung class** 
+```py
+team_member_association = db.Table('team_members',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.user_id'), primary_key=True),
+    db.Column('team_id', db.Integer, db.ForeignKey('teams.team_id'), primary_key=True)
+)
+```
