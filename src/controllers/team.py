@@ -8,6 +8,8 @@ from ..models import db
 from .parsers import create_new_team_parser
 from .parsers import update_team_parser 
 from ..services.teams_service import update_team, delete_team
+from ..services.teams_service import generate_team_code, join_code
+from flask import request 
 # Phai import theo kieu relative path ntn, bo dau . o dau di thi se thanh absolute path 
 
 team_bp = Blueprint('team' , __name__) 
@@ -78,6 +80,31 @@ class Teams(Resource):
         response_data = delete_team(id) 
         return response_data , 200 
 
-team_api.add_resource(Teams , '/' , '/<int:id>')
+class TeamJoinCode(Resource): 
+    def post(self, id): 
+        time = request.json.get('expiresIn')
+        if time is not None: 
+            response_data = generate_team_code(id , time) 
+            return response_data , 201 
+        return {
+            "Success": False, 
+            "message": "Cannot create a team code"
+        }
 
+class TeamJoin(Resource): 
+    def post(self): 
+        data = request.json 
+        if data.get('userID') and data.get('code'): 
+            code = data.get('code') 
+            userID = data.get('userID') 
+            response_data = join_code(code , userID) 
+            return response_data , 200
+        return {
+            "success": False, 
+            "message": "Invalid information"
+        }
+        
+team_api.add_resource(Teams , '/' , '/<int:id>')
+team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
+team_api.add_resource(TeamJoin , '/join')
         

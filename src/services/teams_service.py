@@ -1,3 +1,4 @@
+import datetime
 from ..models import db 
 from ..models.team_model import Team 
 from ..models.user_model import User 
@@ -7,6 +8,9 @@ from ..models.association import team_member_association, assignment_association
 from sqlalchemy import select 
 from ..controllers.parsers import create_new_team_parser
 from ..utils import getImageUrl 
+from ..models.invite_code_model import InviteCode 
+from .randomCode import randomCode 
+from .datetime_service import addTime, toStr, getNow
 import cloudinary.uploader 
 
 # Ham kiem tra the loai member 
@@ -146,15 +150,78 @@ def delete_team(id):
     
     for x in tasks: 
         db.session.delete(x) 
+    inviteCodes = db.session.query(InviteCode).filter(InviteCode.team_id == id).all() 
+    for x in inviteCodes: 
+        db.session.delete(x) 
     db.session.delete(team) 
     db.session.commit() 
     return {
         "success": True, 
         "message": "Your team has been deleted successfully"
     }
+
     
-    
-        
-            
-    
-    
+
+def generate_team_code(id , time): 
+    new_invite_code = InviteCode() 
+    new_invite_code.team_id = id 
+    code = randomCode(8) 
+    if db.session.query(InviteCode).filter(InviteCode.code == randomCode).first(): 
+        code = randomCode(8) 
+    new_invite_code.code = code 
+    new_invite_code.time_expired = addTime(datetime=datetime.datetime.now() , second=time) 
+    db.session.add(new_invite_code) 
+    db.session.commit() 
+    response_data = {
+        "success": True, 
+        "data": {
+            "code": code, 
+            "teamID": id, 
+            "expiresAt": toStr(new_invite_code.time_expired)
+        }
+    } 
+    return response_data 
+
+def join_code(code , userID): 
+    qr = db.session.query(InviteCode).filter(InviteCode.code == code).first() 
+    if qr: 
+        team_id = qr.team_id 
+        team = db.session.query(Team).filter(Team.id == team_id).first() 
+        user = db.session.query(User).filter(User.id == userID).first() 
+        if team and user: 
+            exists_stmt = select(team_member_association).where(
+                team_member_association.c.user_id == user.id,
+                team_member_association.c.team_id == team_id
+            )
+
+            row = db.session.execute(exists_stmt).first()
+
+            if row:
+                return {
+                    "success": False,
+                    "message": "User already joined this team"
+            }
+            stmt = team_member_association.insert().values(
+                team_id = team_id, 
+                user_id = user.id 
+            )
+            db.session.execute(stmt) 
+            db.session.commit() 
+            response_data = {
+                "success": True, 
+                "message": "Join team successfully", 
+                "data": {
+                    "teamID": team_id, 
+                    "joinAt": toStr(getNow()), 
+                    "teamName": team.name 
+                }
+            }
+            return response_data 
+        else: return {
+            "success": False, 
+            "message": "Cannot find the team with this code"
+        }
+    return {
+        "success": False, 
+        "message": "The code is invalid"
+    }
