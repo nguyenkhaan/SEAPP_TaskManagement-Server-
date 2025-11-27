@@ -1,109 +1,234 @@
-from flask import Response 
+from flask import Response, request 
 from flask_restful import Api, Resource 
 from flask import Blueprint
-from ..services.teams_service import getTeams, getTeamByID, uploadTeamImage
 from ..models.team_model import Team 
 from ..models.user_model import User 
+from ..models.invite_code_model import InviteCode
+from ..models.association import team_member_association 
 from ..models import db 
+from flask_jwt_extended import jwt_required , get_jwt_identity
+from ..services.teams_service import queryTeam , createCodeForTeam , getTeamByID
+from ..utils import getImageUrl
+from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam
+
 from .parsers import create_new_team_parser
 from .parsers import update_team_parser 
-from ..services.teams_service import update_team, delete_team
-from ..services.teams_service import generate_team_code, join_code
-from flask import request 
+from ..services.teams_service import update_team, delete_team, isUser
+from ..services.teams_service import join_code
+
+
 # Phai import theo kieu relative path ntn, bo dau . o dau di thi se thanh absolute path 
 
 team_bp = Blueprint('team' , __name__) 
 team_api = Api(team_bp) 
 
 class Teams(Resource): 
+    # 1. Lay thong tin ve 1 team 
     def get(self, id = None): # Viet 1 ham thoi, khong duoc phep co 2 ham 
         #cung ten trong Python, du cho khac danh sach tham so 
         if id is None: 
-            response_data = getTeams() 
-            print(response_data) 
-            return response_data , 200 
+            # Viet ham get all teams 
+            teams = db.session.query(Team.id , Team.name , Team.icon_url , Team.banner_url , Team.leader_id , Team.vice_leader_id , Team.description).all() 
+            
+            if not teams: 
+                return {
+                    "success": False, 
+                    "message": "Teams not found"
+                }
+            response_data = [
+                {
+                    "teamID": id, 
+                    "teamName": name, 
+                    "icon": getImageUrl(icon), 
+                    "banner": getImageUrl(banner), 
+                    "leaderID": leader_id, 
+                    "viceLeaderID": vice_leader_id, 
+                    "description": description  
+                }
+                for id,name,icon,banner,leader_id,vice_leader_id,description in teams 
+            ]
+            return {
+                "success": True, 
+                "message": "This is all teams", 
+                "data": response_data
+            } , 200
         else: 
             response_data = getTeamByID(id) 
             return response_data , 200 
+        
+    # 2. Tao team moi 
+    @jwt_required() 
     def post(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not(current_user_id): 
+            return {
+                "success": False, 
+                "message": "Can't read information from token"
+            }, 401 
+        #Lay cac thong tin tu trong data gui ve 
+        if not(isUser(current_user_id)): 
+            return {
+                "success": False, 
+                "message": "User not found"
+            } , 401 
+        
         data = dict(create_new_team_parser.parse_args()) 
-        leader_id = data.get('userID') 
         name = data.get('teamName') 
         icon = data.get('icon') 
         banner = data.get('banner') 
-        description = data.get('teamDescription')
-
+        description = data.get('description') 
+        
+        # Tao team moi 
         new_team = Team() 
         new_team.name = name 
-        new_team.description = description 
-        new_team.leader_id = leader_id 
-        # Thuc hien update leader 
-        leader = db.session.query(User).filter(User.id == leader_id).first() 
-        new_team.leader = leader 
-        new_team.icon_url = None 
+        new_team.description = (description if description else '') 
+        new_team.leader_id = current_user_id 
+        new_team.leader = db.session.query(User).filter(User.id == current_user_id).first() 
         new_team.banner_url = None 
-    
-    
-        if icon is not None: 
-            # Thuc hien viec update du lieu len cloudinary 
-            url = uploadTeamImage(new_team , icon , 'icon')
-            new_team.icon_url = url 
+        new_team.icon_url = None 
+        
+        if icon: 
+            url = uploadTeamImage(new_team , icon.read() , 'icon') 
+            if not(url): 
+                new_team.icon_url = None 
         else: 
             new_team.icon_url = None 
-        if banner is not None: 
-            # Thuc hien update du lieu len cloudinary 
-            url = uploadTeamImage(new_team , banner , 'banner') 
-            new_team.icon_url = url 
+        if banner: 
+            url = uploadTeamImage(new_team , banner.read() , 'banner') 
+            if not(url): 
+                new_team.banner_url = None 
         else: 
-            new_team.banner_url = '' 
-
-
+            new_team.banner_url = None 
+            
         db.session.add(new_team) 
+        db.session.commit() 
+        
+        # Goi ham de tao ma code 
+        code = createCodeForTeam(new_team.id , 604800) # Tao ma code de tham gia nhom 
+        
+        # Them du lieu current_user_id , team_id vao ben trong bang association 
+        stmt = team_member_association.insert().values(
+                team_id = new_team.id, 
+                user_id = current_user_id 
+            )
+        db.session.execute(stmt) 
         db.session.commit() 
         
         return {
             "success": True, 
-            "message": "Your team has been created successfully", 
-            "data": new_team.to_dict(), 
-            "leader": leader.to_dict() 
-        }, 201 
+            "message": "Your team has been completed successfully. You can join with the code below", 
+            "data": queryTeam(new_team.id), 
+            "code": code 
+        } , 201 
+    #Update team    
+    @jwt_required() 
     def put(self, id = None): 
-        data = update_team_parser.parse_args() 
-        if id is None: 
+        userID = int(get_jwt_identity()) 
+        if not userID: 
             return {
-                "success": True, 
+                "success": False, 
+                "message": "Your token is failed to make any updated"
+            } , 401 
+        team = db.session.query(1).filter(Team.id == id).first() 
+        if not team: 
+            return {
+                "success": False, 
                 "message": "Don't know team to update"
-            } , 405 
-        response_data = update_team(id , data) 
+            } , 401 
+        data = update_team_parser.parse_args() 
+        response_data = update_team(userID , id , data)
         return response_data
+    @jwt_required() 
     def delete(self , id): 
+        current_user_id = int(get_jwt_identity()) 
+        information = db.session.query(Team.leader_id).filter(id == Team.id).first() 
+        
+        # Khong tim thay team 
+        if not information: 
+            return {
+                "success": False, 
+                "message": "Team not found to delete"
+            }
+        # Chi co leader moi duoc xoa team 
+        if int(information[0]) != current_user_id: 
+            return {
+                "success": False, 
+                "message": "You dont have permission to do this action"
+            }
+        
         response_data = delete_team(id) 
         return response_data , 200 
-
+    
+# Tien hanh join team 
 class TeamJoinCode(Resource): 
+    # Tao code cho team 
     def post(self, id): 
         time = request.json.get('expiresIn')
-        if time is not None: 
-            response_data = generate_team_code(id , time) 
-            return response_data , 201 
+        if time is None: 
+            return {
+                "Success": False, 
+                "message": "Missing time to create team code"
+            } , 401 
+        print(id , time) 
+        if id is None: 
+            return {
+                "Success": False, 
+                "Message": "Team not found" 
+            }
+        code = createCodeForTeam(id , int(time)) 
+        print(code) 
+        if code is None: 
+            return {
+                "Success": False, 
+                "message": "Missing information to create team code"
+            } , 401 
         return {
-            "Success": False, 
-            "message": "Cannot create a team code"
-        }
+            "success": True, 
+            "message": "You can use the code below to join", 
+            "data": {
+                "teamID": id, 
+                "code": code 
+            } 
+        } , 201 
 
+# Tham gia nhom 
+# Yeu cau phai co jwt de tien hanh join nhom 
 class TeamJoin(Resource): 
+    @jwt_required() 
     def post(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "User not identity"
+            } , 401 
+        
         data = request.json 
-        if data.get('userID') and data.get('code'): 
-            code = data.get('code') 
-            userID = data.get('userID') 
-            response_data = join_code(code , userID) 
-            return response_data , 200
+        code = data.get('code') 
+        
+        teamID = db.session.query(InviteCode.team_id).filter(code == InviteCode.code).first() #Boc them dieu kien keim tra code phai con han 
+        
+        if not teamID: 
+            return {
+                "success": False, 
+                "message": "Your code has been expired or incorrect"
+            } , 401 
+        teamID = int(teamID[0])
+        
+        chk = isUserMember(current_user_id , teamID) 
+        if chk: 
+            return {
+                "success": False, 
+                "message": "You has been a member of this team"
+            }
+        
+        addMemberToTeam(current_user_id , teamID) 
         return {
-            "success": False, 
-            "message": "Invalid information"
+            "sucess": True, 
+            "message": "You have been joined successfully"
         }
         
+        # Tien hanh kiem tra xem day co phai thanh vien cua team hay khong
 team_api.add_resource(Teams , '/' , '/<int:id>')
 team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
 team_api.add_resource(TeamJoin , '/join')
