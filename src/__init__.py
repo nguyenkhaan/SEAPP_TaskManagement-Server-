@@ -10,6 +10,7 @@ from datetime import timedelta
 from flask_jwt_extended import JWTManager
 from authlib.integrations.flask_client import OAuth
 from flask_mail import Mail, Message
+from .extensions import jwt_blacklist
 
 
 def create_app(config_object=DevConfig):
@@ -20,15 +21,28 @@ def create_app(config_object=DevConfig):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('APP_SECRET_KEY')
 
-    db_config(app)
     app.config.from_object(config_object)
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
+
+    db_config(app)
 
     migrate = Migrate(app, db)
     migrate.init_app(app, db)
 
     jwt = JWTManager(app)
+    @jwt.token_in_blocklist_loader
+    def check_jwt_blacklist(jwt_header, jwt_payload):
+        jti = jwt_payload.get('jti')
+        if(jwt_blacklist is None): return False
+
+        is_blacklisted = jwt_blacklist.get(jti)
+
+        if(is_blacklisted): return True
+        
+        return False
+
+
 
     cloudinary_config()
 
