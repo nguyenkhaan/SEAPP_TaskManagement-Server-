@@ -7,7 +7,7 @@ class Team(db.Model):
     id = db.Column('team_id', db.Integer, primary_key=True)
     icon_url = db.Column(db.String(255), nullable=True)
     banner_url = db.Column(db.String(255), nullable=True)
-    name = db.Column('team_name', db.String(100), unique=True, nullable=False)
+    name = db.Column('team_name', db.String(100), unique=False, nullable=False)
     description = db.Column('team_desc', db.String(500), nullable=True)
     
     # Khóa ngoại cho Leader và ViceLeader
