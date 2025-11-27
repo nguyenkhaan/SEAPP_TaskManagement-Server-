@@ -59,3 +59,63 @@ forgot_password_parser.add_argument('email',type=str, required=True, help="Email
 set_new_password_parser = reqparse.RequestParser()
 set_new_password_parser.add_argument('reset_password_token', type=str, required=True, help="Reset_password_token cannot be blank", location='json')
 set_new_password_parser.add_argument('new_password', type=str, required=True, help="New password cannot be blank", location='json')
+
+#Create Task
+create_task_parser = reqparse.RequestParser()
+create_task_parser.add_argument('title', type=str,
+                                required=True, help="Task title cannot be blank", location='json')
+create_task_parser.add_argument('description', type=str,
+                                required=False, location='json')
+create_task_parser.add_argument('dueTime', type=str,
+                                required=True, help="Due time cannot be blank (e.g., 2025-11-20T17:00:00Z)", location='json')
+create_task_parser.add_argument(
+    'important',
+    type=bool,
+    required=False,
+    location='json',
+    help="Important flag must be boolean (true/false)"
+)
+create_task_parser.add_argument('assigneeIds', type=str,
+                                required=False, location='json', action='append')
+
+#update task
+update_task_parser = reqparse.RequestParser()
+update_task_parser.add_argument('title', type=str,
+                                required=False, location='json')
+update_task_parser.add_argument('description', type=str,
+                                required=False, location='json')
+update_task_parser.add_argument('dueTime', type=str,
+                                required=False, location='json')
+update_task_parser.add_argument(
+    'important',
+    type=bool,
+    required=False,
+    location='json'
+)
+update_task_parser.add_argument(
+    'status',
+    type=str,
+    choices=('to do', 'in progress', 'completed'),
+    required=False,
+    location='json'
+)
+
+#search task
+search_tasks_parser = reqparse.RequestParser()
+search_tasks_parser.add_argument('q', type=str,
+                                required=True, help="Search query 'q' cannot be blank", location='args')
+search_tasks_parser.add_argument('teamId', type=str,
+                                required=False, location='args')
+search_tasks_parser.add_argument(
+    'status',
+    type=str,
+    choices=('to do', 'in progress', 'completed'),
+    required=False,
+    location='args'
+)
+search_tasks_parser.add_argument(
+    'important',
+    type=bool,
+    required=False,
+    location='args'
+)
