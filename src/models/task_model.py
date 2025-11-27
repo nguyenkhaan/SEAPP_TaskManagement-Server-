@@ -10,7 +10,7 @@ class Task(db.Model):
     due_time = db.Column(db.DateTime, nullable=True)
     important = db.Column(db.Boolean, default=False)
     urgent = db.Column(db.Boolean, default=False)
-    status = db.Column(db.String(50), default='To Do')
+    status = db.Column(db.String(50), default='to do')
     
     # Khóa ngoại TeamID
     team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
