@@ -4,13 +4,15 @@ from .parsers import register_parser, login_parser, verify_parser, reset_passwor
 from werkzeug.security import generate_password_hash
 from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword
 from ..services.jwt_service import decode_verification_token, decode_reset_password_token
-from flask_jwt_extended import create_access_token, decode_token
+from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt
 import os
 from dotenv import load_dotenv 
 import secrets
 from datetime import timedelta
 from flask_mail import Message
 from ..config.mail import mail
+import uuid
+from ..extensions import jwt_blacklist
 
 
 load_dotenv()
@@ -36,7 +38,8 @@ class Register(Resource):
             "email": email,
             "password_hash": password_hash,
             "name": name,
-            "purpose": "email_verification"
+            "purpose": "email_verification",
+            "jti": uuid.uuid4().hex
         }
 
         verification_token = create_access_token(identity=email, additional_claims=custom_claims, expires_delta=timedelta(hours=24))
@@ -90,7 +93,7 @@ class Verify(Resource):
         new_user = createUser(name, email, password)
 
         if(new_user):
-            access_token = create_access_token(identity=str(new_user['id']))
+            access_token = create_access_token(identity=str(new_user['id']), additional_claims={'jti': uuid.uuid4().hex})
             
             return redirect(
                 f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
@@ -114,7 +117,7 @@ class Login(Resource):
 
         user = checkUser(email = email, password = password)
         if(user):
-            access_token = create_access_token(identity=str(user['id']))
+            access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
             
             return {
                 "success": True,
@@ -179,7 +182,7 @@ class AuthorizeGoogle(Resource):
             user['login_method'] = 'google'
 
             if(user):
-                access_token = create_access_token(identity=user['id'], additional_claims={'login_method': 'google'})
+                access_token = create_access_token(identity=user['id'], additional_claims={'login_method': 'google', 'jti': uuid.uuid4().hex})
 
                 return {
                     "success": True,
@@ -200,7 +203,7 @@ class AuthorizeGoogle(Resource):
             
             user = createUser(name=name, email=email, password = sub_id)
             uploadAvatar(id=user['id'], url=picture)
-            access_token = create_access_token(identity=user['id'], additional_claims={'login_method': 'google'})
+            access_token = create_access_token(identity=user['id'], additional_claims={'login_method': 'google', 'jti': uuid.uuid4().hex})
             return {
                     "success": True,
                     "message" : "Login successful.",
@@ -249,7 +252,8 @@ class ForgotPassword(Resource):
         name = user['name']
         custom_claims = {
             'user_id': user_id,
-            "purpose": "reset_password"
+            'purpose': "reset_password",
+            'jti': uuid.uuid4().hex
         }
         reset_password_token = create_access_token(identity=str(user_id), additional_claims=custom_claims, expires_delta=timedelta(minutes=30))
         reset_password_page_url = f"https://youtube.com/forgot-password?reset_password_token={reset_password_token}"
@@ -316,6 +320,33 @@ class SetNewPassword(Resource):
             
         except Exception:
             return {"success": False, "message": "Invalid or malformed token."}, 401
+
+
+class Logout(Resource):
+    @jwt_required()
+    def post(self):
+        if(jwt_blacklist is None): return {
+            "success": False,
+            "message": "Cannot find jwt_blacklist"
+        }
+
+        claims = get_jwt()
+        jti = claims['jti']
+
+        if(jwt_blacklist.set(jti, 'true', ex=timedelta(days=7))):
+            return {
+                "success": True,
+                "message": "User session is deleted"
+            }
+        
+        return {
+            "success": False,
+            "message": "Failed to logout"
+        }
+
+        
+
+
         
 
 
@@ -331,3 +362,4 @@ auth_api.add_resource(LoginGoogle, '/login-google')
 auth_api.add_resource(AuthorizeGoogle, '/authorize-google')
 auth_api.add_resource(ForgotPassword, '/forgot-password')
 auth_api.add_resource(SetNewPassword, '/set-new-password')
+auth_api.add_resource(Logout, '/logout')
