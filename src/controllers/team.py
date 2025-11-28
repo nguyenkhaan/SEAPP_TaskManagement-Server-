@@ -36,7 +36,7 @@ class Teams(Resource):
         
     # 2. Tao team moi 
     @jwt_required() 
-    def post(self): 
+    def post(self):   # Da check 
         current_user_id = int(get_jwt_identity()) 
         if not(current_user_id): 
             return {
@@ -100,7 +100,7 @@ class Teams(Resource):
         } , 201 
     #Update team    
     @jwt_required() 
-    def put(self, id = None): 
+    def put(self, id = None): #id = teamID 
         userID = int(get_jwt_identity()) 
         if not userID: 
             return {
@@ -118,16 +118,16 @@ class Teams(Resource):
                 "success": False, 
                 "message": "Don't know team to update"
             } , 401 
-        if userID != int(team[0]) and (userID != int(team[1])): # Neu nhu userID kong phai la leader_id hay vice_leader_id 
+        if userID == int(team[0]) or (team[1] and userID == int(team[1])): # Neu nhu userID kong phai la leader_id hay vice_leader_id 
+            data = update_team_parser.parse_args() 
+            response_data = update_team(userID , id , data)
+            return response_data
+        else: 
             return {
                 "success": False, 
                 "message": "You don't have any permission to do this action" 
             }
         
-        
-        data = update_team_parser.parse_args() 
-        response_data = update_team(userID , id , data)
-        return response_data
     @jwt_required() 
     def delete(self , id): 
         current_user_id = int(get_jwt_identity()) 
@@ -152,7 +152,7 @@ class Teams(Resource):
 # Tien hanh join team 
 class TeamJoinCode(Resource): 
     # Tao code cho team 
-    def post(self, id): 
+    def post(self, id): # Da check 
         time = request.json.get('expiresIn')
         if time is None: 
             return {
@@ -184,7 +184,7 @@ class TeamJoinCode(Resource):
 # Tham gia nhom 
 # Yeu cau phai co jwt de tien hanh join nhom 
 class TeamJoin(Resource): 
-    @jwt_required() 
+    @jwt_required() # Da check 
     def post(self): 
         current_user_id = int(get_jwt_identity()) 
         if not current_user_id: 
@@ -222,7 +222,7 @@ class TeamJoin(Resource):
     
 class UserWithTeam(Resource): 
     @jwt_required() 
-    def get(self): 
+    def get(self): # Da check 
         current_user_id = int(get_jwt_identity()) 
         if not current_user_id: 
             return {
@@ -252,10 +252,16 @@ class UserWithTeam(Resource):
             "message": "This is all teams you joined", 
             "data": teams 
         }
+    # Nguoi dung roi group 
     @jwt_required() 
     def delete(self): 
         current_user_id = int(get_jwt_identity()) 
         teamID = user_leave_parser.parse_args().get('teamID') 
+        if not isUserMember(current_user_id , teamID):
+            return {
+                "success": False, 
+                "message": "You don't belong to this group"
+            }
         if isLeader(current_user_id , teamID):
             return {
                 "success": False, 

@@ -197,6 +197,7 @@ def update_team(userID , id , data): #id = teamID
     # Update team name 
     if name is not None: 
         team.name = name 
+        response_data['teamName'] = name 
     # Update icon 
     if icon is not None: 
         iconUrl = uploadTeamImage(team , icon , 'icon') 
@@ -209,29 +210,35 @@ def update_team(userID , id , data): #id = teamID
     if description is not None: 
         team.description = description 
         response_data["description"] = description
-    # Update Leader ID -> Chi co leaderID moi co quyen lam 2 viec duoi day  
+    # Update Leader ID va viceLeaderID -> Chi co leaderID moi co quyen lam 2 viec duoi day  
     currentLeader = team.leader_id 
     if leaderID is not None:
-        if currentLeader == userID:
-            Leader = db.session.query(User).filter(User.id == leaderID).first() 
-            if Leader: 
-                team.leader = Leader 
-                team.leader_id = leaderID 
+        if isMember(leaderID , id): 
+            if currentLeader == userID:
+                Leader = db.session.query(User).filter(User.id == leaderID).first() 
+                if Leader: 
+                    team.leader = Leader 
+                    team.leader_id = leaderID 
+                else: 
+                    response_data["leaderID"] = "Error in find leader"
             else: 
-                response_data["leaderID"] = "Error in find leader"
+                response_data['leaderID'] = "You dont't have permission to do this" 
         else: 
-            response_data['leaderID'] = "You dont't have permission to do this" 
+            response_data['leaderID'] = 'This person is not the member of this team'
     # Update vice leader 
     if viceLeaderID is not None: # CHinh lai chi co leader moi duoc phep doi 
-        if currentLeader == userID: 
-            ViceLeader = db.session.query(User).filter(viceLeaderID == User.id).first() 
-            if ViceLeader: 
-                team.vice_leader = ViceLeader 
-                team.vice_leader_id = viceLeaderID 
+        if isMember(viceLeaderID , id): 
+            if currentLeader == userID: 
+                ViceLeader = db.session.query(User).filter(viceLeaderID == User.id).first() 
+                if ViceLeader: 
+                    team.vice_leader = ViceLeader 
+                    team.vice_leader_id = viceLeaderID 
+                else: 
+                    response_data["viceLeaderID"] = "Error in find vice leader"
             else: 
-                response_data["viceLeaderID"] = "Error in find vice leader"
+                response_data['viceLeaderID'] = "You don't have permission to do this"
         else: 
-            response_data['viceLeaderID'] = "You dont't have permission to do this"
+            response_data['viceLeaderID'] = 'This person is not the member of this team' 
     #Update database 
     db.session.commit()  
     return {
@@ -325,7 +332,7 @@ def deleteUserFromGroup(userID , teamID):
     # Thuc hien xoa nhung cai duoc giao cho userID bi xoa 
     tasks = db.session.query(Task.id).filter(Task.team_id == teamID).all() 
     stmp = assignment_association.delete().where(
-        (assignment_association.c.team_id.in_([t[0] for t in tasks])) & 
+        (assignment_association.c.task_id.in_([t[0] for t in tasks])) & 
         (assignment_association.c.user_id == userID)
     )
     
