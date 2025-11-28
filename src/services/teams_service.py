@@ -25,15 +25,14 @@ def isMember(user_id, team_id):
     return False
 
 def isViceLeader(user_id, team_id):
-    vice_leader_id = db.session.query(Team.vice_leader_id).filter(Team.id == team_id).first() 
-    if(vice_leader_id[0] == user_id): return True
-    return False
+    chk = db.session.query(1).filter(Team.id == team_id).filter(Team.vice_leader_id == user_id).first() 
+    if chk: return True 
+    return False 
 
 def isLeader(user_id, team_id):
-    leader_id = db.session.query(Team.leader_id).filter(Team.id == team_id).first() 
-    print(leader_id) 
-    if(leader_id[0] == user_id): return True
-    return False
+    chk = db.session.query(1).filter(Team.id == team_id).filter(Team.leader_id == user_id).first() 
+    if chk: return True 
+    return False 
 
 def getRole(userID , teamID): 
     if isViceLeader(userID , teamID) == True: 
@@ -210,22 +209,22 @@ def update_team(userID , id , data): #id = teamID
     if description is not None: 
         team.description = description 
         response_data["description"] = description
-    # Update Leader ID 
+    # Update Leader ID -> Chi co leaderID moi co quyen lam 2 viec duoi day  
     currentLeader = team.leader_id 
     if leaderID is not None:
         if currentLeader == userID:
-            Leader = db.session(User).filter(leaderID == User.id).first() 
+            Leader = db.session.query(User).filter(User.id == leaderID).first() 
             if Leader: 
                 team.leader = Leader 
                 team.leader_id = leaderID 
             else: 
-                response_data["viceLeaderID"] = "Error in find leader"
+                response_data["leaderID"] = "Error in find leader"
         else: 
             response_data['leaderID'] = "You dont't have permission to do this" 
     # Update vice leader 
-    if viceLeaderID is not None:
+    if viceLeaderID is not None: # CHinh lai chi co leader moi duoc phep doi 
         if currentLeader == userID: 
-            ViceLeader = db.session(User).filter(viceLeaderID == User.id).first() 
+            ViceLeader = db.session.query(User).filter(viceLeaderID == User.id).first() 
             if ViceLeader: 
                 team.vice_leader = ViceLeader 
                 team.vice_leader_id = viceLeaderID 
@@ -312,3 +311,29 @@ def join_code(code , userID):
         "success": False, 
         "message": "The code is invalid"
     }
+    
+def deleteUserFromGroup(userID , teamID): 
+    team = db.session.query(Team).filter(teamID == Team.id).first() 
+    if team and isViceLeader(userID , teamID): 
+        team.vice_leader_id = None   #foreign key 
+        team.vice_leader = None  #relationship 
+    # Tien hanh xoa cap user_id , team_id nay trong db.Column 
+    stmt = team_member_association.delete().where(
+        (team_member_association.c.user_id == userID) & 
+        (team_member_association.c.team_id == teamID) 
+    )
+    # Thuc hien xoa nhung cai duoc giao cho userID bi xoa 
+    tasks = db.session.query(Task.id).filter(Task.team_id == teamID).all() 
+    stmp = assignment_association.delete().where(
+        (assignment_association.c.team_id.in_([t[0] for t in tasks])) & 
+        (assignment_association.c.user_id == userID)
+    )
+    
+    for x in tasks: 
+        db.session.delete(x) 
+    
+    
+    db.session.execute(stmt) # Thuc hien cau lenh 1 
+    db.session.execute(stmp) # Thuc hien cau lenh 2 
+    db.session.commit() 
+    return True 

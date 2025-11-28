@@ -4,17 +4,16 @@ from flask import Blueprint
 from ..models.team_model import Team 
 from ..models.user_model import User 
 from ..models.invite_code_model import InviteCode
-from ..models.association import team_member_association 
+from ..models.task_model import Task
+from ..models.association import team_member_association , assignment_association
 from ..models import db 
 from flask_jwt_extended import jwt_required , get_jwt_identity
 from ..services.teams_service import queryTeam , createCodeForTeam , getTeamByID
 from ..utils import getImageUrl
 from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam
 
-from .parsers import create_new_team_parser
-from .parsers import update_team_parser 
-from ..services.teams_service import update_team, delete_team, isUser
-from ..services.teams_service import join_code
+from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser
+from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup
 
 
 # Phai import theo kieu relative path ntn, bo dau . o dau di thi se thanh absolute path 
@@ -27,31 +26,10 @@ class Teams(Resource):
     def get(self, id = None): # Viet 1 ham thoi, khong duoc phep co 2 ham 
         #cung ten trong Python, du cho khac danh sach tham so 
         if id is None: 
-            # Viet ham get all teams 
-            teams = db.session.query(Team.id , Team.name , Team.icon_url , Team.banner_url , Team.leader_id , Team.vice_leader_id , Team.description).all() 
-            
-            if not teams: 
-                return {
-                    "success": False, 
-                    "message": "Teams not found"
-                }
-            response_data = [
-                {
-                    "teamID": id, 
-                    "teamName": name, 
-                    "icon": getImageUrl(icon), 
-                    "banner": getImageUrl(banner), 
-                    "leaderID": leader_id, 
-                    "viceLeaderID": vice_leader_id, 
-                    "description": description  
-                }
-                for id,name,icon,banner,leader_id,vice_leader_id,description in teams 
-            ]
             return {
-                "success": True, 
-                "message": "This is all teams", 
-                "data": response_data
-            } , 200
+                "scuesss": False, 
+                "message": "Don't know team to get information"
+            }
         else: 
             response_data = getTeamByID(id) 
             return response_data , 200 
@@ -129,12 +107,24 @@ class Teams(Resource):
                 "success": False, 
                 "message": "Your token is failed to make any updated"
             } , 401 
-        team = db.session.query(1).filter(Team.id == id).first() 
+        if not isUser(userID): 
+            return {
+                "success": False, 
+                "message": "User not found" 
+            } , 401 
+        team = db.session.query(Team.leader_id , Team.vice_leader_id).filter(Team.id == id).first()   # Query ra hai cai nay de hoi 
         if not team: 
             return {
                 "success": False, 
                 "message": "Don't know team to update"
             } , 401 
+        if userID != int(team[0]) and (userID != int(team[1])): # Neu nhu userID kong phai la leader_id hay vice_leader_id 
+            return {
+                "success": False, 
+                "message": "You don't have any permission to do this action" 
+            }
+        
+        
         data = update_team_parser.parse_args() 
         response_data = update_team(userID , id , data)
         return response_data
@@ -229,7 +219,84 @@ class TeamJoin(Resource):
         }
         
         # Tien hanh kiem tra xem day co phai thanh vien cua team hay khong
-team_api.add_resource(Teams , '/' , '/<int:id>')
+    
+class UserWithTeam(Resource): 
+    @jwt_required() 
+    def get(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "User not found to get all teams"
+            } , 401 
+        if not isUser(current_user_id): 
+            return {
+                "success": False, 
+                "message": "User not found"
+            } , 401 
+        teams = db.session.query(Team.id , Team.name , Team.banner_url , Team.icon_url , Team.description , Team.leader_id , Team.vice_leader_id).join(team_member_association , team_member_association.c.team_id == Team.id).filter(current_user_id == team_member_association.c.user_id).all() 
+        teams = [
+            {
+                "id": teamID, 
+                "name": name, 
+                "banner": getImageUrl(banner), 
+                "icon": getImageUrl(icon), 
+                "leader_id": leader, 
+                "vice_leader_id": vice_leader, 
+                "description": description 
+            } 
+            for teamID, name, banner , icon, description , leader , vice_leader  in teams 
+        ] 
+        return {
+            "success": True, 
+            "message": "This is all teams you joined", 
+            "data": teams 
+        }
+    @jwt_required() 
+    def delete(self): 
+        current_user_id = int(get_jwt_identity()) 
+        teamID = user_leave_parser.parse_args().get('teamID') 
+        if isLeader(current_user_id , teamID):
+            return {
+                "success": False, 
+                "message": "Leader cannot leave the group"
+            }
+        deleteUserFromGroup(current_user_id , teamID) 
+        return {
+            "success": True, 
+            "message": "You have leaved group successfully"
+        } , 200 
+
+
+class LeaderKickUser(Resource): 
+    @jwt_required() 
+    def delete(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not isLeader(current_user_id): 
+            return {
+                "success": False, 
+                "message": "You don't have permission to do this action"
+            }
+        data = leader_kick_parser.parse_args() 
+        teamID = data.get('teamID') 
+        userID = data.get('userID') 
+        if not(teamID) or not(userID): 
+            return {
+                "success": False , 
+                "message": "Missing information to delete"
+            } 
+        if not(isUserMember(userID , teamID)): 
+            return {
+                "success": False, 
+                "message": "This user don't belong to your group"
+            } , 400 
+        deleteUserFromGroup(userID , teamID) 
+        return {
+            "success": True, 
+            "message": "Kick successfully"
+        }
+team_api.add_resource(Teams , '/' , '/<int:id>') 
+team_api.add_resource(UserWithTeam , '/user')
 team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
 team_api.add_resource(TeamJoin , '/join')
         

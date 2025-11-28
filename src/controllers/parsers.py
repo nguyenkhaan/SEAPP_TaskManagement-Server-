@@ -135,3 +135,12 @@ update_team_parser.add_argument("teamName" , required = False , type=str , locat
 update_team_parser.add_argument("teamDescription" , required = False , type = str , location = 'form') 
 update_team_parser.add_argument("leaderID" , required = False , type = int , location = 'form') 
 update_team_parser.add_argument("viceLeaderID" , required = False , type = int , location = 'form') 
+
+#User leave the group 
+user_leave_parser = reqparse.RequestParser() 
+user_leave_parser.add_argument("teamID" , type = int , required = True , help = "Missing team-leave id" , location = 'json')
+
+#Leader kich members =)) 
+leader_kick_parser = reqparse.RequestParser() 
+leader_kick_parser.add_argument("teamID" , type = int , required = True , help = "Missing team-leave id" , location = 'json') 
+leader_kick_parser.add_argument("userID" , type = int , required = True , help = "Missing member to kick" , location = 'json')
