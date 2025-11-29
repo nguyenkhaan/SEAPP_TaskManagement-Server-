@@ -75,6 +75,15 @@ create_task_parser.add_argument(
     location='json',
     help="Important flag must be boolean (true/false)"
 )
+
+create_task_parser.add_argument(
+    'urgent',
+    type=bool,
+    required=False,
+    location='json',
+    help="Urgent flag must be boolean (true/false)"
+)
+
 create_task_parser.add_argument('assigneeIds', type=str,
                                 required=False, location='json', action='append')
 
@@ -88,6 +97,12 @@ update_task_parser.add_argument('dueTime', type=str,
                                 required=False, location='json')
 update_task_parser.add_argument(
     'important',
+    type=bool,
+    required=False,
+    location='json'
+)
+update_task_parser.add_argument(
+    'urgent',
     type=bool,
     required=False,
     location='json'
@@ -118,6 +133,12 @@ search_tasks_parser.add_argument(
     type=bool,
     required=False,
     location='args'
+)
+update_task_parser.add_argument(
+    'urgent',
+    type=bool,
+    required=False,
+    location='json'
 )
 
 # CREATE NEW TEAM 

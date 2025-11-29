@@ -7,6 +7,7 @@ from sqlalchemy import select, func, case, extract, or_
 from sqlalchemy.sql import exists
 from datetime import datetime, date, timedelta
 from flask import jsonify
+from sqlalchemy.orm import joinedload
 
 def isMember(user_id, team_id):
     stmt = select(team_member_association).where(
@@ -55,7 +56,6 @@ def map_task_to_dict(task):
     team = db.session.get(Team, task.team_id) if task.team_id else None
     team_name = team.name if team else None
     due_time_str = task.due_time.isoformat() + 'Z' if task.due_time else None
-    created_at_str = task.created_at.isoformat() + 'Z' if task.created_at else None
 
     return {
         "taskId": str(task.id),
@@ -63,9 +63,9 @@ def map_task_to_dict(task):
         "description": task.description,
         "dueTime": due_time_str,
         "important": task.important,
+        "urgent":task.urgent,
         "status": task.status,
         "teamName": team_name,
-        "createdAt": created_at_str,
     }
 
 def getTaskStatistics(user_id):
@@ -151,7 +151,7 @@ def getTasksOverview(user_id):
                                               assignment_association.c.task_id == Task.id).where(
         assignment_association.c.user_id == user_id,
         Task.status == 'completed'
-    ).order_by(Task.updated_at.desc()).limit(7)
+    ).order_by(Task.due_time.desc()).limit(7)
     recent_completed_query = db.session.scalars(recent_completed_stmt).all()
     recent_completed = [map_task_to_dict(task) for task in recent_completed_query]
 
@@ -186,7 +186,6 @@ def getAllUserTasksGroupedByTeam(user_id):
                 "title": task.title,
                 "description": task.description,
                 "dueTime": task.due_time.isoformat() + 'Z' if task.due_time else None,
-                "createdAt": task.created_at.isoformat() + 'Z' if task.created_at else None
             }
             for task in tasks_query
         ]
@@ -255,11 +254,10 @@ def updateTaskById(user_id, task_id, data):
                 if key == 'due_time' and value is not None and isinstance(value, str):
                     value = datetime.fromisoformat(value.replace('Z', '+00:00'))
 
-                # Bỏ trường checker_id khỏi việc cập nhật
+
 
                 setattr(task, key, value)
 
-        task.updated_at = datetime.utcnow()
         db.session.commit()
 
         return {
@@ -313,7 +311,6 @@ def getTeamTasks(user_id, team_id):
             "title": task.title,
             "description": task.description,
             "dueTime": task.due_time.isoformat() + 'Z' if task.due_time else None,
-            "createdAt": task.created_at.isoformat() + 'Z' if task.created_at else None
         }
         for task in tasks_query
     ]
@@ -347,7 +344,8 @@ def createTask(user_id, team_id, data):
             title=data['title'],
             description=data.get('description'),
             due_time=due_time_obj,
-            important=data.get['important', False],
+            important=data.get('important', False),
+            urgent=data.get('urgent', False),
             status=data.get('status', 'to do')
         )
 
@@ -383,7 +381,7 @@ def createTask(user_id, team_id, data):
         return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": "Could not create task."}}, 500
 
 
-def searchTasks(user_id, query, team_id=None, status=None, important=None):
+def searchTasks(user_id, query, team_id=None, status=None, important=None,urgent = None):
     base_stmt = select(Task).join(assignment_association,
                                   assignment_association.c.task_id == Task.id).where(
         assignment_association.c.user_id == user_id
@@ -407,6 +405,9 @@ def searchTasks(user_id, query, team_id=None, status=None, important=None):
 
     if important:
         base_stmt = base_stmt.filter(Task.important == important)
+
+    if urgent:
+        base_stmt = base_stmt.filter(Task.urgent == urgent)
 
     tasks = db.session.scalars(base_stmt).all()
     results = [map_task_to_dict(task) for task in tasks]
