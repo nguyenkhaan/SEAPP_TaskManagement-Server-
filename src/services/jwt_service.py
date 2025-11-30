@@ -6,6 +6,8 @@ from flask_jwt_extended import decode_token
 def decode_jwt_token(token): 
     try:
         payload = jwt.decode(token, verify=False)
+        if not payload.get('email_verified'):   #Phai veriy email thi moi cho trich xuat thong tin tu token 
+            return None 
         email = payload.get('email') 
         password_hash = payload.get('password_hash')
         name = payload.get('name') 
