@@ -1,8 +1,9 @@
-from flask import Blueprint, url_for, current_app, redirect
+import requests
+from flask import Blueprint, url_for, current_app, redirect, request
 from flask_restful import Api, Resource
 from .parsers import register_parser, login_parser, verify_parser, reset_password_parser, forgot_password_parser, set_new_password_parser
 from werkzeug.security import generate_password_hash
-from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword
+from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword, getUserInfoFromCode
 from ..services.jwt_service import decode_verification_token, decode_reset_password_token
 from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt
 import os
@@ -75,30 +76,52 @@ class Register(Resource):
         
 
 class Verify(Resource):
-    def get(self):
+    def get(self):  # Dua vao access_token de lay thong tin nguoi dung => Khoi tao nguoi dung 
         args = verify_parser.parse_args()
-        verification_token = args['token']
-
+        verification_token = args.get('token') 
         user_data = decode_verification_token(verification_token)
-        name = user_data['name']
-        email = user_data['email']
-        password = user_data['password_hash']
-
+        
+        if user_data is None: 
+            user_data = getUserInfoFromCode(verification_token) 
+        if user_data is None: 
+            return {
+                "success": False, 
+                "message": "Login code is invalid. Please try again later"
+            }
+        name = user_data.get('name') 
+        email = user_data.get('email')
+        password = user_data.get('password_hash') 
+        if password is None: 
+            password = '' # Neu nhu khong co password thi dat lai password la chuoi rong 
+        #Da ton tai nguoi dung => Chuyen huong, khong lam gi 
         if(getUserByEmail(email)):
             return redirect(
-                f"https://{os.getenv('WEB_URL')}?verified=false", 
-                code=302
+                # f"https://{os.getenv('WEB_URL')}?verified=false", 
+                # code=302
+                {
+                    "sucess": False, 
+                    "message": "Email has been registerd"
+                }
             )
-
+        # Neu chua co nguoi dung thi tien hanh tao nguoi dung moi 
         new_user = createUser(name, email, password)
 
         if(new_user):
             access_token = create_access_token(identity=str(new_user['id']), additional_claims={'jti': uuid.uuid4().hex})
             
-            return redirect(
-                f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
-                code=302
-            )
+            # return redirect(
+            #     # f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
+            #     # code=302
+            #     {
+            #         "success": True, 
+            #         "message": "Khoi tao nguoi dung thanh cong", 
+
+            #     }
+            # )
+            return {
+                "success": True, 
+                "message": "Khoi tao nguoi dung thanh cong", 
+            } , 200 
         else:
             return redirect(
                 f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=false", 
@@ -106,14 +129,11 @@ class Verify(Resource):
             )
     
 
-        
-            
-
 class Login(Resource):
     def post(self):
         login_args = login_parser.parse_args()
-        email = login_args['email']
-        password = login_args['password']
+        email = login_args.get('email')
+        password = login_args.get('password')
 
         user = checkUser(email = email, password = password)
         if(user):

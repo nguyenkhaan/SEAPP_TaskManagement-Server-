@@ -2,6 +2,29 @@ import jwt
 from flask import current_app 
 from flask_jwt_extended import decode_token
 
+
+def decode_jwt_token(token): 
+    try:
+        payload = jwt.decode(token, verify=False)
+        email = payload.get('email') 
+        password_hash = payload.get('password_hash')
+        name = payload.get('name') 
+        return {
+            "email": email, 
+            "password_hash": password_hash, 
+            "name": name 
+        }
+    except jwt.ExpiredSignatureError:
+        return None
+
+    except jwt.InvalidTokenError:
+        return None
+    except Exception as e:
+        print(f"Lỗi giải mã token: {e}")
+        return None      
+
+
+
 def decode_verification_token(token):
     try:
         payload = decode_token(token)

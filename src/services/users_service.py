@@ -1,6 +1,9 @@
+import requests
+import os 
 from ..models import db
 from ..models.user_model import User
 from werkzeug.security import check_password_hash, generate_password_hash
+from .jwt_service import decode_jwt_token
 import cloudinary.uploader
 
 
@@ -176,5 +179,28 @@ def setNewPassword(id:int, new_password:str):
                 "user": user.to_dict()
             }            
         }
-    
-        
+
+def getTokenFromCode(code): 
+    url = 'https://oauth2.googleapis.com/token' 
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    } 
+    data = {
+        "code": code, 
+        "client_id": os.environ.get('OAUTH_CLIENT_CLIENT_ID_2'), 
+        "client_secret": os.environ.get('OAUTH_CLIENT_SECRET_2'), 
+        'redirect_uri': 'http://localhost:5173', 
+        'grant_type': 'authorization_code' 
+    }
+    r = requests.post(url , data=data , headers=headers) 
+    if r: 
+        return dict(r.json()).get('id_token') 
+    return None 
+def getUserInfoFromCode(code): 
+    response_token_data = getTokenFromCode(code) 
+    if not response_token_data: 
+        return None 
+    user_data = decode_jwt_token(response_token_data) 
+    if user_data:   #user_data duoc decode thanh cong  
+        return user_data 
+    return None  #user_data decode that bai 

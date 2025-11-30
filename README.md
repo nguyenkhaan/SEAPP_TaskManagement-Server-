@@ -1,62 +1,196 @@
-# TỔNG QUAN VỀ DỰ ÁN 
-## 1. Hướng dẫn chạy dự án 
-B1. Clone dự án về máy và khởi tạo môi trường ảo mới 
-`python -m env env/` 
+# TỔNG QUAN VỀ DỰ ÁN
 
-B2. Khởi tạo môi trường ảo 
-- Linux/MacOS: `source venv/bin/activate`
-- Windows: `venv/Script/activate`
+## 1. Hướng dẫn chạy dự án
 
-B3. Cài đặt các gói cần thiết: 
-`pip install -r requirements.txt`
+### Bước 1 --- Clone dự án & tạo môi trường ảo
 
-B4. Chạy dự án 
-- Chạy database: `docker compose up -d` (Đã cài docker)
-- Chạy server: `python main.py`
-
-B5. Sau khi code và chỉnh sử dự án, nhớ lưu lại các gói đã cài thêm vào file requirements.txt 
-`pip freeze > requirements.txt`
-
-## 2. Tổng quan về dự án 
-- main.py: File chính để chạy app  
-- src: Thư mục chứa mã nguồn 
-    + config: Chứa các file cấu hình dự án 
-    + controllers: Chứa các đường dẫn api 
-    + models: Thao tác với database 
-    + middlewares: Các hàm xử lí middleware (nếu có) 
-    + serives: Các hàm hỗ trợ logic 
-    + api.py: Đăng kí cho tất cả blueprints
-    + __init__.py: Khai báo biến app, chạy các cấu hình cần thiết 
-- .env: Biến môi trường 
-- template.py: Tạo folder structure
-- template.sh: Tạo folder structure # SEAPP_TaskManagement-Server-
-
-
-## 3. Chú ý khi phát triển
-
-### 1. Cập nhật cấu trúc bảng trong database
-
-Khi thay đổi cấu trúc các models của database thì cần lưu các thay đổi vào folder migrations và cập nhật lên database
-
-```
-flask -A main.py db init	Tạo hệ thống migration (làm 1 lần)
-flask -A main.py db migrate	Tạo file migration khi model thay đổi (Các lần sau có chạy lại cũng không bị mất dữ liệu)
-flask -A main.py db upgrade: Cập nhật dữ liệu xuống database theo file migration 
+``` bash
+python -m venv env/
 ```
 
-### 2. Cách để bật gợi ý trong Python 
-Ctrl + Shift + P -> Select Python: Interprepter -> Chọn vào thư mục env/ 
-### 3. Gửi dữ liệu về 
+### Bước 2 --- Kích hoạt môi trường ảo
 
-Flask sẽ tự convert dữ liệu đó sang JSON nếu đó là dữ liệu có thể convert được (Ví dụ: dictionary, list, string...) 
-Ta cũng có thể tự lấy mã trạng thái `return data,status_code`
+-   **Linux/MacOS**
 
-Để tránh lỗi circular import database, hãy import và cấu hình db trong file __init__.py, sau đó thư mục main gọi hàm config đó thôi. Các thư mục khác import db từ đó để sử dụng 
+    ``` bash
+    source env/bin/activate
+    ```
 
-**Tao bang khong dung class** 
-```py
+-   **Windows**
+
+    ``` bash
+    env\Scripts\activate
+    ```
+
+### Bước 3 --- Cài đặt thư viện
+
+``` bash
+pip install -r requirements.txt
+```
+
+### Bước 4 --- Chạy dự án
+
+-   Chạy database:
+
+    ``` bash
+    docker compose up -d
+    ```
+
+-   Chạy server:
+
+    ``` bash
+    python main.py
+    ```
+
+### Bước 5 --- Cập nhật gói đã cài
+
+``` bash
+pip freeze > requirements.txt
+```
+
+------------------------------------------------------------------------
+
+## 2. Cấu trúc dự án (Tree View)
+
+    SEAPP_TaskManagement-Server-
+    │── main.py: File chạy chính của chương trình 
+    │── requirements.txt
+    │── .env                 
+    │── template.py
+    │── template.sh
+    │
+    └── src/
+        │── api.py
+        │── __init__.py
+        │
+        ├── config/
+        │     └── Chứa các cấu hinfhc ho hệ thống 
+        │
+        ├── controllers/
+        │     └── ...
+        │
+        ├── models/
+        │     └── Nơi khai báo các Model cũng như biến db 
+        │
+        ├── middlewares/
+        │     └── ...
+        │
+        └── services/
+              └── Các hàm hỗ trợ logic 
+
+------------------------------------------------------------------------
+
+## 3. Hướng dẫn phát triển
+
+### 3.1. Cập nhật cấu trúc dữ liệu (migrations)
+
+``` bash
+flask -A main.py db init
+flask -A main.py db migrate
+flask -A main.py db upgrade
+```
+
+### 3.2. Bật gợi ý trong Python (VSCode)
+
+`Ctrl + Shift + P` → **Select Python Interpreter** → chọn `env/`
+
+### 3.3. Gửi dữ liệu JSON trong Flask
+
+``` python
+return data, status_code
+```
+
+### 3.4. Tạo bảng không dùng class
+
+``` python
 team_member_association = db.Table('team_members',
     db.Column('user_id', db.Integer, db.ForeignKey('users.user_id'), primary_key=True),
     db.Column('team_id', db.Integer, db.ForeignKey('teams.team_id'), primary_key=True)
 )
 ```
+
+------------------------------------------------------------------------
+
+## 4. Xác thực đăng nhập
+
+### 4.1. Luồng hoạt động
+
+-   FE mở popup đăng nhập Google
+-   OAuth xác thực
+-   Google trả về: `id_token`, `access_token`, `code`
+-   FE gửi dữ liệu xuống BE
+-   BE verify token hoặc dùng `code` lấy token mới từ Google
+
+------------------------------------------------------------------------
+
+## Hướng 1: Xác thực qua JWT Token
+
+-   BE nhận **id_token**
+-   Verify JWT
+-   Giải mã lấy thông tin người dùng
+
+------------------------------------------------------------------------
+
+## Hướng 2: Authorization Code (đang sử dụng)
+
+### FE gọi login qua Google OAuth
+
+``` js
+const login = useGoogleLogin({
+  onSuccess: (tokenResponse) => loginGoogleSuccess(tokenResponse),
+  onError: (error) => loginGoogleFailed(error),
+  flow: "auth-code",
+  scope: "openid email profile",
+});
+```
+
+### BE đổi code lấy access_token & id_token
+
+``` python
+def getToken(code):
+    url = "https://oauth2.googleapis.com/token"
+    headers = { "Content-Type": "application/x-www-form-urlencoded" }
+    data = {
+        "code": code,
+        "client_id": "YOUR_CLIENT_ID",
+        "client_secret": "YOUR_PUBLIC_KEY",
+        "redirect_uri": "http://localhost:5173",
+        "grant_type": "authorization_code"
+    }
+    r = requests.post(url, data=data, headers=headers)
+    if r.status_code == 200:
+        return r.json()
+    return None
+```
+
+### BE đổi toke lấy thông tin người dùng 
+
+```py
+def getUserInfoFromToken(code): 
+    print(code) 
+    response_token_data = getToken(code) 
+    print('Response token la: ' , response_token_data) 
+    if response_token_data: 
+        access_token = response_token_data.get('access_token') 
+        if access_token: 
+            headers = {"Authorization": f"Bearer {access_token}"}
+            r = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers=headers)
+            if r.status_code == 200:
+                return r.json()
+            return None
+        else: return None 
+    else: 
+        return None  
+```
+------------------------------------------------------------------------
+
+## Lưu ý khi cấu hình OAuth Google
+
+-   **CLIENT_ID** -- đăng ký trên Google Cloud
+-   **CLIENT_SECRET** -- đăng ký trên Google Cloud
+-   **REDIRECT_URI**
+    -   Nếu **SPA** → URI của Frontend
+    -   Nếu **SSR / Backend** → URI của Backend
+-   Phải đăng ký Redirect URI trên Google Cloud Console
+
+------------------------------------------------------------------------
