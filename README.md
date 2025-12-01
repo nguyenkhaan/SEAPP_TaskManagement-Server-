@@ -182,6 +182,14 @@ def getUserInfoFromToken(code):
     else: 
         return None  
 ```
+
+---
+### Các endpoint quan trọng: 
+/login: Khi người dùng đăng nhập thông qua email - password đã đăng kí   
+/login-google: Khi người dùng đăng nhập qua cơ chế google, dùng cách xác thực trên   
+/register: Dùng để đăng kí => Trả về 1 token cho FE   
+/verify: FE dùng nó để tiếp tục verify cái đã đăng kí   
+
 ------------------------------------------------------------------------
 
 ## Lưu ý khi cấu hình OAuth Google

@@ -41,11 +41,12 @@ class Register(Resource):
             "password_hash": password_hash,
             "name": name,
             "purpose": "email_verification",
-            "jti": uuid.uuid4().hex
+            "jti": str(uuid.uuid4().hex) 
         }
 
         verification_token = create_access_token(identity=email, additional_claims=custom_claims, expires_delta=timedelta(hours=24))
-
+        if isinstance(verification_token, bytes):
+            verification_token = verification_token.decode("utf-8") 
         verify_url = url_for('auth.verify', _external=True, token = verification_token )
 
 
@@ -87,16 +88,18 @@ class Verify(Resource):
         password = user_data['password_hash']
 
         if(getUserByEmail(email)):
-            return redirect(
-                f"https://{os.getenv('WEB_URL')}?verified=false", 
-                code=302
-            )
+            return {
+                "success": True, 
+                "message": "Email has been registered", 
+            }
 
         new_user = createUser(name, email, password)
 
         if(new_user):
             access_token = create_access_token(identity=str(new_user['id']))
-            
+            access_token = create_access_token(identity=str(id), additional_claims={'jti': uuid.uuid4().hex})
+            if isinstance(access_token, bytes):
+                access_token = access_token.decode("utf-8") 
             # return redirect(
             #     f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
             #     code=302
