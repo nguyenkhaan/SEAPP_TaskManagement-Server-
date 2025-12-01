@@ -46,6 +46,9 @@ def checkUser(id:int = -1, email:str = "", password:str = ""):
             return user.to_dict()
     return None
 
+def getUserIDByEmail(email): 
+    user_id = db.session.query(User.id).filter(email == User.email).first() 
+    return str(user_id[0])  
 
 def updateUserById(id, name, email, password, avatar_url):
     user = User.query.get(id)

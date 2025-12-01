@@ -1,9 +1,9 @@
 import requests
 from flask import Blueprint, url_for, current_app, redirect, request
 from flask_restful import Api, Resource
-from .parsers import register_parser, login_parser, verify_parser, reset_password_parser, forgot_password_parser, set_new_password_parser
+from .parsers import register_parser, login_parser, verify_parser, reset_password_parser, forgot_password_parser, set_new_password_parser, login_google_parser
 from werkzeug.security import generate_password_hash
-from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword, getUserInfoFromCode
+from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword, getUserInfoFromCode, getUserIDByEmail
 from ..services.jwt_service import decode_verification_token, decode_reset_password_token
 from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt
 import os
@@ -95,19 +95,20 @@ class Verify(Resource):
             password = '' # Neu nhu khong co password thi dat lai password la chuoi rong 
         #Da ton tai nguoi dung => Chuyen huong, khong lam gi 
         if(getUserByEmail(email)):
-            return redirect(
+            return (   #//redirect
                 # f"https://{os.getenv('WEB_URL')}?verified=false", 
                 # code=302
                 {
-                    "sucess": False, 
-                    "message": "Email has been registerd"
-                }
+                    "sucess": True, 
+                    "message": "Email has been registerd", 
+                    "email": email 
+                } , 200 
             )
         # Neu chua co nguoi dung thi tien hanh tao nguoi dung moi 
         new_user = createUser(name, email, password)
 
         if(new_user):
-            access_token = create_access_token(identity=str(new_user['id']), additional_claims={'jti': uuid.uuid4().hex})
+            
             
             # return redirect(
             #     # f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
@@ -118,9 +119,13 @@ class Verify(Resource):
 
             #     }
             # )
+            
             return {
                 "success": True, 
                 "message": "Khoi tao nguoi dung thanh cong", 
+                "token_type": "Bearer", 
+                "expires_in": 60*60*24*7 
+
             } , 200 
         else:
             return redirect(
@@ -171,6 +176,31 @@ class LoginGoogle(Resource):
                 "success": False,
                 "message": "Unable to initiate Google login."
             }, 500
+    def post(self): 
+        login_google_args = login_google_parser.parse_args() 
+        email = login_google_args.get('email')   # Gui ve 1 cai email de khoi tao phien dang nhap 
+        if (not login_google_args) or (not email): 
+            return {
+                "success": False, 
+                "message": "Login bt Google failed. Please try again later"
+            }
+        user_id = getUserIDByEmail(email) 
+        if not user_id: 
+            return {
+                "success": True, 
+                "message": "Email not found" 
+            } 
+        access_token = create_access_token(identity=str(user_id) , additional_claims={'jti': uuid.uuid4().hex})
+        if isinstance(access_token, bytes):
+            access_token = access_token.decode("utf-8")
+        print(access_token) 
+        return {
+            "success": True, 
+            "token": access_token, 
+            "expires": 60*60*24*7, 
+            "type": "Bearer"
+        }
+        
 
 class AuthorizeGoogle(Resource):
     def get(self):
@@ -367,13 +397,7 @@ class Logout(Resource):
         
 
 
-        
-
-
-
-
-
-        
+    
 
 auth_api.add_resource(Register, '/register')
 auth_api.add_resource(Verify, '/verify')
