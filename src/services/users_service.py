@@ -5,7 +5,8 @@ from ..models.user_model import User
 from werkzeug.security import check_password_hash, generate_password_hash
 from .jwt_service import decode_jwt_token
 import cloudinary.uploader
-
+import uuid 
+from flask_jwt_extended import create_access_token
 
 def createUser(name:str, email:str, password:str):
     new_user = User(name=name, email=email, password=password )
@@ -49,6 +50,11 @@ def checkUser(id:int = -1, email:str = "", password:str = ""):
 def getUserIDByEmail(email): 
     user_id = db.session.query(User.id).filter(email == User.email).first() 
     return str(user_id[0])  
+
+def checkEmail(email):
+    chk = db.session.query(1).filter(email == User.email).first() 
+    if chk: return True 
+    return False 
 
 def updateUserById(id, name, email, password, avatar_url):
     user = User.query.get(id)
@@ -207,3 +213,13 @@ def getUserInfoFromCode(code):
     if user_data:   #user_data duoc decode thanh cong  
         return user_data 
     return None  #user_data decode that bai 
+
+def createSession(email , password): 
+    user = checkUser(email = email, password = password)
+    if user: 
+        access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
+        if isinstance(access_token, bytes):
+            access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
+        return access_token 
+    return None 
+

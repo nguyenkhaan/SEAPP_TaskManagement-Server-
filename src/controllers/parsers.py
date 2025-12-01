@@ -26,7 +26,7 @@ login_parser.add_argument('password', type=str, required=True, help="Password ca
 
 #LOGIN GOOGLE PAERSER 
 login_google_parser = reqparse.RequestParser() 
-login_google_parser.add_argument('email' , type= str, required = True, help = "Email cannot be blank" , location = "json") 
+login_google_parser.add_argument('code' , type= str, required = True, help = "Code cannot be blank" , location = "json") 
 
 # UPDATE USER
 update_user_parser = reqparse.RequestParser()

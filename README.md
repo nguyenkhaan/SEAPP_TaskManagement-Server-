@@ -194,3 +194,7 @@ def getUserInfoFromToken(code):
 -   Phải đăng ký Redirect URI trên Google Cloud Console
 
 ------------------------------------------------------------------------
+Qua trinh xac thuc: 
+Login by google: Verify -> FE 
+Login by user name and email => Login 
+Register by user name and email => Register => Verify => Tao tai khoan nguoi dung 

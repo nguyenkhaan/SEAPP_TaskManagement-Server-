@@ -3,9 +3,10 @@ from flask import Blueprint, url_for, current_app, redirect, request
 from flask_restful import Api, Resource
 from .parsers import register_parser, login_parser, verify_parser, reset_password_parser, forgot_password_parser, set_new_password_parser, login_google_parser
 from werkzeug.security import generate_password_hash
-from ..services.users_service import createUser, getUserByEmail, checkUser, uploadAvatar, setNewPassword, getUserInfoFromCode, getUserIDByEmail
+from ..services.users_service import createUser, checkEmail , getUserByEmail, checkUser, uploadAvatar, setNewPassword, getUserInfoFromCode, getUserIDByEmail
 from ..services.jwt_service import decode_verification_token, decode_reset_password_token
 from flask_jwt_extended import create_access_token, decode_token, jwt_required, get_jwt
+from ..services.verify_service import verfyGoogleToken
 import os
 from dotenv import load_dotenv 
 import secrets
@@ -78,64 +79,42 @@ class Register(Resource):
 class Verify(Resource):
     def get(self):  # Dua vao access_token de lay thong tin nguoi dung => Khoi tao nguoi dung 
         args = verify_parser.parse_args()
-        verification_token = args.get('token') 
+        verification_token = args['token']
+
         user_data = decode_verification_token(verification_token)
-        
-        if user_data is None: 
-            user_data = getUserInfoFromCode(verification_token) 
-        if user_data is None: 
-            return {
-                "success": False, 
-                "message": "Login code is invalid. Please try again later"
-            }
-        name = user_data.get('name') 
-        email = user_data.get('email')
-        password = user_data.get('password_hash') 
-        if password is None: 
-            password = '' # Neu nhu khong co password thi dat lai password la chuoi rong 
-        #Da ton tai nguoi dung => Chuyen huong, khong lam gi 
+        name = user_data['name']
+        email = user_data['email']
+        password = user_data['password_hash']
+
         if(getUserByEmail(email)):
-            return (   #//redirect
-                # f"https://{os.getenv('WEB_URL')}?verified=false", 
-                # code=302
-                {
-                    "sucess": True, 
-                    "message": "Email has been registerd", 
-                    "email": email 
-                } , 200 
+            return redirect(
+                f"https://{os.getenv('WEB_URL')}?verified=false", 
+                code=302
             )
-        # Neu chua co nguoi dung thi tien hanh tao nguoi dung moi 
+
         new_user = createUser(name, email, password)
 
         if(new_user):
-            
+            access_token = create_access_token(identity=str(new_user['id']))
             
             # return redirect(
-            #     # f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
-            #     # code=302
-            #     {
-            #         "success": True, 
-            #         "message": "Khoi tao nguoi dung thanh cong", 
-
-            #     }
+            #     f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=true", 
+            #     code=302
             # )
-            
             return {
                 "success": True, 
-                "message": "Khoi tao nguoi dung thanh cong", 
-                "token_type": "Bearer", 
-                "expires_in": 60*60*24*7 
-
-            } , 200 
+                "message": "User has registered"
+            }
         else:
             return redirect(
                 f"https://{os.getenv('WEB_URL')}?token={access_token}&verified=false", 
                 code=302
             )
-    
+        # Khoi tao phien dang nhap 
 
+            
 class Login(Resource):
-    def post(self):
+    def post(self):   # Su dung khi nguoi dung dang nhap binh thuong 
         login_args = login_parser.parse_args()
         email = login_args.get('email')
         password = login_args.get('password')
@@ -143,7 +122,8 @@ class Login(Resource):
         user = checkUser(email = email, password = password)
         if(user):
             access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
-            
+            if isinstance(access_token, bytes):
+                access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
             return {
                 "success": True,
                 "message" : "Login successful.",
@@ -177,28 +157,46 @@ class LoginGoogle(Resource):
                 "message": "Unable to initiate Google login."
             }, 500
     def post(self): 
-        login_google_args = login_google_parser.parse_args() 
-        email = login_google_args.get('email')   # Gui ve 1 cai email de khoi tao phien dang nhap 
-        if (not login_google_args) or (not email): 
+        # Ham nay dung de thuc hien verify token tu google 
+        args = login_google_parser.parse_args()
+        verfication_code = args.get('code') 
+        print(verfication_code)
+        if not verfication_code: 
             return {
                 "success": False, 
-                "message": "Login bt Google failed. Please try again later"
-            }
-        user_id = getUserIDByEmail(email) 
-        if not user_id: 
+                "message": "Code is invalid"
+            } , 400 
+        verify_result = getUserInfoFromCode(verfication_code) # Verification from google code 
+        if not verify_result: 
             return {
-                "success": True, 
-                "message": "Email not found" 
-            } 
-        access_token = create_access_token(identity=str(user_id) , additional_claims={'jti': uuid.uuid4().hex})
+                "success": False, 
+                "message": "Code is invalid"
+            }
+        email = verify_result.get('email') 
+        name  = verify_result.get('name') 
+        chk = checkEmail(email) 
+        id = 1 
+        if not chk: 
+            password = generate_password_hash(str(uuid.uuid4())) 
+            new_user = createUser(name , email , password)    # Thuc hien tao user neu nhu nguoi dung lan dau dang nhap 
+            id = new_user.get('id') 
+        else: id = getUserIDByEmail(email)
+        
+        # Khoi tao phien dang nhap 
+        access_token = create_access_token(identity=str(id), additional_claims={'jti': uuid.uuid4().hex})
         if isinstance(access_token, bytes):
-            access_token = access_token.decode("utf-8")
-        print(access_token) 
+            access_token = access_token.decode("utf-8") 
+        if not access_token: 
+            return {
+                "success": False, 
+                "message": "create login code failed" 
+            } 
         return {
             "success": True, 
-            "token": access_token, 
-            "expires": 60*60*24*7, 
-            "type": "Bearer"
+            "token": access_token,
+            "message": "Create login session successfully",  
+            "token_type": "Bearer", 
+            "expires": 60*60*24*7 
         }
         
 
