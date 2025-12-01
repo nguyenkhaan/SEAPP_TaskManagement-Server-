@@ -121,8 +121,9 @@ class Login(Resource):
         login_args = login_parser.parse_args()
         email = login_args.get('email')
         password = login_args.get('password')
-
+        print(email , password) 
         user = checkUser(email = email, password = password)
+        print(user) 
         if(user):
             access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
             if isinstance(access_token, bytes):

@@ -14,6 +14,7 @@ class User(Resource):
     @jwt_required()
     def get(self):
         userId = int(get_jwt_identity())
+        print(userId) 
         if(userId):
             user = getUserById(userId)
             return {
