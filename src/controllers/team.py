@@ -23,16 +23,30 @@ team_api = Api(team_bp)
 
 class Teams(Resource): 
     # 1. Lay thong tin ve 1 team 
+    @jwt_required() 
     def get(self, id = None): # Viet 1 ham thoi, khong duoc phep co 2 ham 
         #cung ten trong Python, du cho khac danh sach tham so 
+        # Lay thong tin cu the ve 1 team 
         if id is None: 
             return {
                 "scuesss": False, 
                 "message": "Don't know team to get information"
-            }
-        else: 
-            response_data = getTeamByID(id) 
-            return response_data , 200 
+            } , 400  # Bad request 
+        userID = int(get_jwt_identity()) 
+        chk = isUser(userID) 
+        if not chk: 
+            return {
+                "success": False, 
+                "message": "User not found", 
+            } , 400 # Bad request 
+        chk = isUserMember(userID , id)
+        if not chk: 
+            return {
+                "success": False, 
+                "message": "User is not a member of this team" 
+            } , 400 
+        response_data = getTeamByID(id) # Lat nua code tiep tai day 
+        return response_data , 200 
         
     # 2. Tao team moi 
     @jwt_required() 
@@ -64,7 +78,7 @@ class Teams(Resource):
         new_team.leader = db.session.query(User).filter(User.id == current_user_id).first() 
         new_team.banner_url = None 
         new_team.icon_url = None 
-        
+        print(icon , banner) 
         if icon: 
             url = uploadTeamImage(new_team , icon.read() , 'icon') 
             if not(url): 
@@ -126,7 +140,7 @@ class Teams(Resource):
             return {
                 "success": False, 
                 "message": "You don't have any permission to do this action" 
-            }
+            } , 403 
         
     @jwt_required() 
     def delete(self , id): 
@@ -138,13 +152,13 @@ class Teams(Resource):
             return {
                 "success": False, 
                 "message": "Team not found to delete"
-            }
+            } , 400 
         # Chi co leader moi duoc xoa team 
         if int(information[0]) != current_user_id: 
             return {
                 "success": False, 
                 "message": "You dont have permission to do this action"
-            }
+            } , 403 
         
         response_data = delete_team(id) 
         return response_data , 200 
@@ -158,13 +172,13 @@ class TeamJoinCode(Resource):
             return {
                 "Success": False, 
                 "message": "Missing time to create team code"
-            } , 401 
+            } , 400 
         print(id , time) 
         if id is None: 
             return {
                 "Success": False, 
                 "Message": "Team not found" 
-            }
+            } , 400 
         code = createCodeForTeam(id , int(time)) 
         print(code) 
         if code is None: 
@@ -216,13 +230,13 @@ class TeamJoin(Resource):
         return {
             "sucess": True, 
             "message": "You have been joined successfully"
-        }
+        } ,200 
         
         # Tien hanh kiem tra xem day co phai thanh vien cua team hay khong
     
 class UserWithTeam(Resource): 
     @jwt_required() 
-    def get(self): # Da check 
+    def get(self): # Da check -> Lay tat ca cac team ma user nay da tham gia 
         current_user_id = int(get_jwt_identity()) 
         if not current_user_id: 
             return {
@@ -250,8 +264,8 @@ class UserWithTeam(Resource):
         return {
             "success": True, 
             "message": "This is all teams you joined", 
-            "data": teams 
-        }
+            "teamData": teams 
+        } , 200 
     # Nguoi dung roi group 
     @jwt_required() 
     def delete(self): 
@@ -266,7 +280,7 @@ class UserWithTeam(Resource):
             return {
                 "success": False, 
                 "message": "Leader cannot leave the group"
-            }
+            } , 403 
         deleteUserFromGroup(current_user_id , teamID) 
         return {
             "success": True, 
@@ -290,7 +304,7 @@ class LeaderKickUser(Resource):
             return {
                 "success": False , 
                 "message": "Missing information to delete"
-            } 
+            } , 401 
         if not(isUserMember(userID , teamID)): 
             return {
                 "success": False, 

@@ -143,7 +143,7 @@ def getTeamByID(id):
         return {
             "success": False, 
             "message": "Team not found"
-        } 
+        } , 401 
     leader = exists[5].to_dict() 
     vice_leader = None 
     if exists[6]: 
@@ -155,7 +155,7 @@ def getTeamByID(id):
         "icon": getImageUrl(str(exists[2])),
         "banner": getImageUrl(str(exists[3])),
         "description": str(exists[4]) 
-    }
+    } 
 
     users = db.session.query(User).join(team_member_association , team_member_association.c.user_id == User.id).filter(team_member_association.c.team_id == id).all() 
     users = [
@@ -174,7 +174,7 @@ def getTeamByID(id):
         "leader": leader, 
         "viceLeader": vice_leader, 
         "members": users 
-    }
+    } , 200 
     
     return response_data 
       
