@@ -56,23 +56,20 @@ def checkEmail(email):
     if chk: return True 
     return False 
 
-def updateUserById(id, name, email, password, avatar_url):
+def updateUserById(id, name = None, email = None):
     user = User.query.get(id)
 
-    if( user is None): return None
-
-    user.name = name
-    user.email = email
-    user.password = password
-    user.avatar_url = avatar_url
+    if(user is None): return None
+    if name is not None: 
+        user.name = name
+    if email is not None: 
+        user.email = email  # Chi thuc hien update name va email 
 
     db.session.commit() 
-    
     return {
         "id": id,
-        "name": name,
-        "password": password,
-        "avatar_url": avatar_url
+        "name": name if name is not None else None,
+        "email": email if email is not None else None, 
     }
 
 def changeEmail(id, new_email, password):

@@ -205,7 +205,7 @@ def getUserInfoFromToken(code):
 Qua trinh xac thuc: 
 Login by google: Verify -> FE 
 Login by user name and email => Login 
-Register by user name and email => Register => Verify => Tao tai khoan nguoi dung 
+Register by user name and email => Register => Gui 1 duong link de dan toi 1 trang FE Veirify, tren url co cai token => Nguoi dung mo trang nay ra => Trang Verify FE mo ra va luc nay ta se lum cai token o ben tren url => Gui request ve endpoint Verify => Tao tai khoan nguoi dung 
 
 ## 5. Một số mã lỗi 
 308: Đường link tự động redirect sang dạng mới. Ví dụ: user thì tự biến thành user/ 

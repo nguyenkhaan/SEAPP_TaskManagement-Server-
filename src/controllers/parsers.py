@@ -30,10 +30,8 @@ login_google_parser.add_argument('code' , type= str, required = True, help = "Co
 
 # UPDATE USER
 update_user_parser = reqparse.RequestParser()
-update_user_parser.add_argument('name', type=str, required=True, help="Name cannot be blank", location='json')
-update_user_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json' )
-update_user_parser.add_argument('password', type=str, required=True, help="Password cannot be blank", location='json')
-update_user_parser.add_argument('avatar', type=list, location='files')
+update_user_parser.add_argument('name', type=str, required=False, location='json')
+update_user_parser.add_argument('email',type=str, required=False, location='json' )
 
 #CHANGE_NAME
 change_name_parser = reqparse.RequestParser()

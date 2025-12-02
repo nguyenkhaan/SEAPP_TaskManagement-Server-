@@ -47,8 +47,9 @@ class Register(Resource):
         verification_token = create_access_token(identity=email, additional_claims=custom_claims, expires_delta=timedelta(hours=24))
         if isinstance(verification_token, bytes):
             verification_token = verification_token.decode("utf-8") 
-        verify_url = url_for('auth.verify', _external=True, token = verification_token )
+        # verify_url = url_for('auth.verify', _external=True, token = verification_token )
 
+        verify_url = f'http://localhost:5173/verify?token={verification_token}'  # Duong link dung de verify email 
 
         msg = Message('NoTask email verification', recipients=[email])
         msg.html = f"""<div class="header">
@@ -89,15 +90,14 @@ class Verify(Resource):
 
         if(getUserByEmail(email)):
             return {
-                "success": True, 
+                "success": False, 
                 "message": "Email has been registered", 
-            }
+            } , 400
 
         new_user = createUser(name, email, password)
 
         if(new_user):
             access_token = create_access_token(identity=str(new_user['id']))
-            access_token = create_access_token(identity=str(id), additional_claims={'jti': uuid.uuid4().hex})
             if isinstance(access_token, bytes):
                 access_token = access_token.decode("utf-8") 
             # return redirect(
