@@ -170,7 +170,7 @@ def getTeamByID(id):
     response_data = {
         "success": True, 
         "message": "This is the information about the team you need", 
-        "data": team, 
+        "teamData": team, 
         "leader": leader, 
         "viceLeader": vice_leader, 
         "members": users 

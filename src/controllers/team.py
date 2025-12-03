@@ -46,7 +46,7 @@ class Teams(Resource):
                 "message": "User is not a member of this team" 
             } , 400 
         response_data = getTeamByID(id) # Lat nua code tiep tai day 
-        return response_data , 200 
+        return response_data
         
     # 2. Tao team moi 
     @jwt_required() 
@@ -68,7 +68,7 @@ class Teams(Resource):
         name = data.get('teamName') 
         icon = data.get('icon') 
         banner = data.get('banner') 
-        description = data.get('description') 
+        description = data.get('teamDescription') # Thuc hien lay du lieu teamDescription 
         
         # Tao team moi 
         new_team = Team() 
@@ -78,7 +78,6 @@ class Teams(Resource):
         new_team.leader = db.session.query(User).filter(User.id == current_user_id).first() 
         new_team.banner_url = None 
         new_team.icon_url = None 
-        print(icon , banner) 
         if icon: 
             url = uploadTeamImage(new_team , icon.read() , 'icon') 
             if not(url): 
@@ -165,7 +164,7 @@ class Teams(Resource):
     
 # Tien hanh join team 
 class TeamJoinCode(Resource): 
-    # Tao code cho team 
+    # Tao lai code cho team 
     def post(self, id): # Da check 
         time = request.json.get('expiresIn')
         if time is None: 
@@ -270,12 +269,12 @@ class UserWithTeam(Resource):
     @jwt_required() 
     def delete(self): 
         current_user_id = int(get_jwt_identity()) 
-        teamID = user_leave_parser.parse_args().get('teamID') 
+        teamID = request.json.get('teamID')
         if not isUserMember(current_user_id , teamID):
             return {
                 "success": False, 
                 "message": "You don't belong to this group"
-            }
+            } , 400
         if isLeader(current_user_id , teamID):
             return {
                 "success": False, 
