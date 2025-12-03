@@ -14,6 +14,7 @@ class User(Resource):
     @jwt_required()
     def get(self):
         userId = int(get_jwt_identity())
+        print(userId) 
         if(userId):
             user = getUserById(userId)
             return {
@@ -27,7 +28,28 @@ class User(Resource):
             "success": False,
             "data": None
         }
-    
+    @jwt_required() 
+    def post(self): 
+        userID = int(get_jwt_identity()) 
+        if userID: 
+            data = update_user_parser.parse_args() 
+            name = data.get('name') 
+            email = data.get('email') 
+            response_data = updateUserById(userID , name = name , email = email)
+            if response_data: 
+                return {
+                    "success": True, 
+                    "message": "Update information successfully", 
+                    "data": response_data 
+                } 
+            return {
+                "sucess": False, 
+                "message": "User not found"
+            }
+        return {
+            "success": False, 
+            "message": "Invalid token"
+        }
 
 
 class ChangeEmail(Resource):
