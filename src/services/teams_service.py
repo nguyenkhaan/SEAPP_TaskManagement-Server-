@@ -147,7 +147,7 @@ def getTeamByID(id):
     leader = exists[5].to_dict() 
     vice_leader = None 
     if exists[6]: 
-        vice_leader = exists[1].to_dict() 
+        vice_leader = exists[6].to_dict() 
         
     team = {
         "id": exists[0], 
@@ -181,69 +181,116 @@ def getTeamByID(id):
 # [POST] 
 
                 
-def update_team(userID , id , data): #id = teamID 
-    data = dict(data) 
-    
-    icon = data.get('icon')  
-    banner = data.get('banner') 
-    name = data.get('teamName') 
+def update_team(userID, id, data):  # id = teamID
+    data = dict(data)
+
+    icon = data.get('icon')
+    banner = data.get('banner')
+    name = data.get('teamName')
     description = data.get('teamDescription')
     leaderID = data.get('leaderID')
     viceLeaderID = data.get('viceLeaderID')
+
     response_data = {
-        "teamID": id 
+        "teamID": id
     }
-    team = db.session.query(Team).filter(Team.id == id).first() 
-    # Update team name 
-    if name is not None: 
-        team.name = name 
-        response_data['teamName'] = name 
-    # Update icon 
-    if icon is not None: 
-        iconUrl = uploadTeamImage(team , icon , 'icon') 
-        response_data["iconUrl"] = iconUrl 
-    # Update banner 
-    if banner is not None: 
-        bannerUrl = uploadTeamImage(team , banner , 'banner') 
-        response_data["bannerUrl"] = bannerUrl 
-    # Update description 
-    if description is not None: 
-        team.description = description 
-        response_data["description"] = description
-    # Update Leader ID va viceLeaderID -> Chi co leaderID moi co quyen lam 2 viec duoi day  
-    currentLeader = team.leader_id 
+
+    # Lấy team
+    team = db.session.query(Team).filter(Team.id == id).first()
+    if not team:
+        return {
+            "success": False,
+            "message": "Team not found",
+            "data": {}
+        }, 404
+
+    currentLeader = team.leader_id
+    currentViceLeader = team.vice_leader_id
+
+    # --- Update name ---
+    if name:
+        team.name = name
+        response_data['teamName'] = name
+
+    # --- Update icon ---
+    if icon:
+        iconUrl = uploadTeamImage(team, icon, 'icon')
+        response_data['iconUrl'] = iconUrl
+
+    # --- Update banner ---
+    if banner:
+        bannerUrl = uploadTeamImage(team, banner, 'banner')
+        response_data['bannerUrl'] = bannerUrl
+
+    # --- Update description ---
+    if description:
+        team.description = description
+        response_data['description'] = description
+
+    # --- Update Leader ---
     if leaderID is not None:
-        if isMember(leaderID , id): 
-            if currentLeader == userID:
-                Leader = db.session.query(User).filter(User.id == leaderID).first() 
-                if Leader: 
-                    team.leader = Leader 
-                    team.leader_id = leaderID 
-                else: 
-                    response_data["leaderID"] = "Error in find leader"
-            else: 
-                response_data['leaderID'] = "You dont't have permission to do this" 
-        else: 
+        if not isMember(leaderID, id):
             response_data['leaderID'] = 'This person is not the member of this team'
-    # Update vice leader 
-    if viceLeaderID is not None: # CHinh lai chi co leader moi duoc phep doi 
-        if isMember(viceLeaderID , id): 
-            if currentLeader == userID: 
-                ViceLeader = db.session.query(User).filter(viceLeaderID == User.id).first() 
-                if ViceLeader: 
-                    team.vice_leader = ViceLeader 
-                    team.vice_leader_id = viceLeaderID 
-                else: 
-                    response_data["viceLeaderID"] = "Error in find vice leader"
-            else: 
+        elif currentLeader != userID:
+            response_data['leaderID'] = "You don't have permission to do this"
+        elif leaderID == currentLeader:
+            response_data['leaderID'] = "This person is already the leader"
+        else:
+            # Xóa quyền Vice-Leader nếu người này đang là Vice-Leader
+            if team.vice_leader_id == leaderID:
+                team.vice_leader = None
+                team.vice_leader_id = None
+                response_data['viceLeaderID'] = None  # báo frontend quyền bị xóa
+            # Chỉ định Leader mới
+            newLeader = db.session.query(User).filter(User.id == leaderID).first()
+            if newLeader:
+                team.leader = newLeader
+                team.leader_id = leaderID
+                response_data['leaderID'] = leaderID
+            else:
+                response_data['leaderID'] = "Error in find leader"
+
+    # --- Update Vice-Leader ---
+    if viceLeaderID is not None:
+        if not isMember(viceLeaderID, id):
+            response_data['viceLeaderID'] = 'This person is not the member of this team'
+        else:
+            # Quyền update vice-leader
+            if currentLeader == userID:
+                # Leader có quyền update vice-leader
+                if viceLeaderID == currentLeader:
+                    response_data['viceLeaderID'] = "Cannot assign leader as vice-leader"
+                else:
+                    newVice = db.session.query(User).filter(User.id == viceLeaderID).first()
+                    if newVice:
+                        team.vice_leader = newVice
+                        team.vice_leader_id = viceLeaderID
+                        response_data['viceLeaderID'] = viceLeaderID
+                    else:
+                        response_data['viceLeaderID'] = "Error in find vice leader"
+            elif currentViceLeader == userID:
+                # Vice-leader chỉ được đổi vice-leader, không đổi leader
+                if viceLeaderID == currentLeader:
+                    response_data['viceLeaderID'] = "Cannot assign leader as vice-leader"
+                elif viceLeaderID == currentViceLeader:
+                    response_data['viceLeaderID'] = "This person is already the vice-leader"
+                else:
+                    newVice = db.session.query(User).filter(User.id == viceLeaderID).first()
+                    if newVice:
+                        team.vice_leader = newVice
+                        team.vice_leader_id = viceLeaderID
+                        response_data['viceLeaderID'] = viceLeaderID
+                    else:
+                        response_data['viceLeaderID'] = "Error in find vice leader"
+            else:
                 response_data['viceLeaderID'] = "You don't have permission to do this"
-        else: 
-            response_data['viceLeaderID'] = 'This person is not the member of this team' 
-    #Update database 
-    db.session.commit()  
+
+    # --- Commit database ---
+    db.session.commit()
+
     return {
-        "success": True, 
-        "message": "Your team has been updated successfully", 
+        "success": True,
+        "message": "Your team has been updated successfully",
         "data": response_data
     }
 

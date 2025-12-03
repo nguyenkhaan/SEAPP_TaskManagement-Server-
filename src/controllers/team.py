@@ -12,7 +12,7 @@ from ..services.teams_service import queryTeam , createCodeForTeam , getTeamByID
 from ..utils import getImageUrl
 from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam
 
-from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser
+from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser, user_role_parser
 from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup
 
 
@@ -286,6 +286,45 @@ class UserWithTeam(Resource):
             "message": "You have leaved group successfully"
         } , 200 
 
+class TeamRole(Resource): 
+    @jwt_required() 
+    def get(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Invalid token or id" 
+            } , 200 
+        data = user_role_parser.parse_args() 
+        teamID = data.get('teamID') 
+        if not teamID: 
+            return {
+                "success": False, 
+                "message": "Team not found"
+            } , 200 
+        chk = isUserMember(current_user_id , teamID) 
+        if not chk: 
+            return {
+                "success": False, 
+                "message": "You dont belong to this team"
+            } , 200 
+        leader_id = db.session.query(Team.leader_id).filter(teamID == Team.id).first() 
+        vice_leader_id = db.session.query(Team.vice_leader_id).filter(teamID == Team.id).first() 
+        if leader_id[0] == current_user_id: 
+            return {
+                "success": True, 
+                "role": "leader" 
+            } 
+        if vice_leader_id[0] == current_user_id: 
+            return {
+                "success": True, 
+                "role": "vice" 
+            } 
+        return {
+            "success": True, 
+            "role": "member" 
+        }
+
 
 class LeaderKickUser(Resource): 
     @jwt_required() 
@@ -318,4 +357,4 @@ team_api.add_resource(Teams , '/' , '/<int:id>')
 team_api.add_resource(UserWithTeam , '/user')
 team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
 team_api.add_resource(TeamJoin , '/join')
-        
+team_api.add_resource(TeamRole , '/role')

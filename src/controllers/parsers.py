@@ -166,3 +166,7 @@ user_leave_parser.add_argument("teamID" , type = int , required = True , help = 
 leader_kick_parser = reqparse.RequestParser() 
 leader_kick_parser.add_argument("teamID" , type = int , required = True , help = "Missing team-leave id" , location = 'json') 
 leader_kick_parser.add_argument("userID" , type = int , required = True , help = "Missing member to kick" , location = 'json')
+
+# GET TEAM ROLE 
+user_role_parser = reqparse.RequestParser() 
+user_role_parser.add_argument('teamID' , type = int , required = True , help = "Missing team to get role" , location = "args")
