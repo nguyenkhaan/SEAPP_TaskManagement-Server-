@@ -45,7 +45,7 @@ class Teams(Resource):
                 "success": False, 
                 "message": "User is not a member of this team" 
             } , 400 
-        response_data = getTeamByID(id) # Lat nua code tiep tai day 
+        response_data = getTeamByID(id , userID) # Lat nua code tiep tai day 
         return response_data
         
     # 2. Tao team moi 
@@ -140,7 +140,7 @@ class Teams(Resource):
                 "success": False, 
                 "message": "You don't have any permission to do this action" 
             } , 403 
-        
+    # Endpoint dung de xoa team 
     @jwt_required() 
     def delete(self , id): 
         current_user_id = int(get_jwt_identity()) 
