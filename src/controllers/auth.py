@@ -164,7 +164,7 @@ class LoginGoogle(Resource):
         # Ham nay dung de thuc hien verify token tu google 
         args = login_google_parser.parse_args()
         verfication_code = args.get('code') 
-        print(verfication_code)
+        print('Ma code la: ' , verfication_code)
         if not verfication_code: 
             return {
                 "success": False, 
@@ -172,10 +172,11 @@ class LoginGoogle(Resource):
             } , 400 
         verify_result = getUserInfoFromCode(verfication_code) # Verification from google code 
         if not verify_result: 
+            print('Ma khong hop le ') 
             return {
                 "success": False, 
                 "message": "Code is invalid"
-            }
+            } , 400 
         email = verify_result.get('email') 
         name  = verify_result.get('name') 
         chk = checkEmail(email) 
@@ -190,11 +191,13 @@ class LoginGoogle(Resource):
         access_token = create_access_token(identity=str(id), additional_claims={'jti': uuid.uuid4().hex})
         if isinstance(access_token, bytes):
             access_token = access_token.decode("utf-8") 
+        print(access_token) 
         if not access_token: 
+            print('Khoi tao that bai')
             return {
                 "success": False, 
                 "message": "create login code failed" 
-            } 
+            } , 400 
         return {
             "success": True, 
             "token": access_token,

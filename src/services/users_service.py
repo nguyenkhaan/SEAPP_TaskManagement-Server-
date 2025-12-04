@@ -3,7 +3,7 @@ import os
 from ..models import db
 from ..models.user_model import User
 from werkzeug.security import check_password_hash, generate_password_hash
-from .jwt_service import decode_jwt_token
+from .jwt_service import decode_google_token
 import cloudinary.uploader
 import uuid 
 from flask_jwt_extended import create_access_token
@@ -206,7 +206,8 @@ def getUserInfoFromCode(code):
     response_token_data = getTokenFromCode(code) 
     if not response_token_data: 
         return None 
-    user_data = decode_jwt_token(response_token_data) 
+    user_data = decode_google_token(response_token_data) 
+    print(user_data) 
     if user_data:   #user_data duoc decode thanh cong  
         return user_data 
     return None  #user_data decode that bai 

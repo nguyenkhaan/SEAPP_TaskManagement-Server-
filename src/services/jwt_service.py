@@ -1,31 +1,25 @@
-import jwt
-from flask import current_app 
 from flask_jwt_extended import decode_token
+from flask import current_app
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
-
-def decode_jwt_token(token): 
+def decode_google_token(token: str):
     try:
-        payload = jwt.decode(token, verify=False)
-        if not payload.get('email_verified'):   #Phai veriy email thi moi cho trich xuat thong tin tu token 
-            return None 
-        email = payload.get('email') 
-        password_hash = payload.get('password_hash')
-        name = payload.get('name') 
+        # Verify token với Google
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), None)
+        # Nếu cần, bạn có thể check aud (client_id) để đảm bảo token là của app bạn
+        if not idinfo.get("email_verified"):
+            return None
+
         return {
-            "email": email, 
-            "password_hash": password_hash, 
-            "name": name 
+            "email": idinfo.get("email"),
+            "name": idinfo.get("name"),
+            "user_id": idinfo.get("sub")  # Google unique user id
         }
-    except jwt.ExpiredSignatureError:
+    except ValueError as e:
+        # Token không hợp lệ hoặc expired
+        print(f"Lỗi decode Google token: {e}")
         return None
-
-    except jwt.InvalidTokenError:
-        return None
-    except Exception as e:
-        print(f"Lỗi giải mã token: {e}")
-        return None      
-
-
 
 def decode_verification_token(token):
     try:
@@ -42,11 +36,6 @@ def decode_verification_token(token):
             'password_hash': password_hash,
             'name': payload.get('name') 
         }
-
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
     except Exception as e:
         print(f"Lỗi giải mã token: {e}")
         return None       
@@ -64,12 +53,6 @@ def decode_reset_password_token(token: str):
         return {
             'user_id': user_id
         }
-
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
     except Exception as e:
         print(f"Lỗi giải mã token: {e}")
         return None       
-
