@@ -1,12 +1,24 @@
 from flask_restful import reqparse
 from werkzeug.datastructures import FileStorage
+from werkzeug.exceptions import BadRequest
+import re 
 
+# validate email format
+EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
+def validate_email_format(value):
+    if not isinstance(value, str):
+        raise BadRequest("Email field must be a string.")
+    
+    if not re.match(EMAIL_REGEX, value):
+        raise BadRequest(value + " is not a valid email.")
+    
+    return value
 
 # REGISTER PARSER
 register_parser = reqparse.RequestParser()
 register_parser.add_argument('name', type=str, required=True, help="Name cannot be blank", location='json')
-register_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json' )
+register_parser.add_argument('email',type=validate_email_format, required=True, help="Email cannot be blank", location='json' )
 register_parser.add_argument('password', type=str, required=True, help="Password cannot be blank", location='json')
 
 # VERIFY PARSER
@@ -21,7 +33,7 @@ verify_parser.add_argument(
 
 # LOGIN PARSER
 login_parser = reqparse.RequestParser()
-login_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json' )
+login_parser.add_argument('email',type=validate_email_format, required=True, help="Email cannot be blank", location='json' )
 login_parser.add_argument('password', type=str, required=True, help="Password cannot be blank", location='json')
 
 #LOGIN GOOGLE PAERSER 
@@ -31,7 +43,7 @@ login_google_parser.add_argument('code' , type= str, required = True, help = "Co
 # UPDATE USER
 update_user_parser = reqparse.RequestParser()
 update_user_parser.add_argument('name', type=str, required=False, location='json')
-update_user_parser.add_argument('email',type=str, required=False, location='json' )
+update_user_parser.add_argument('email',type=validate_email_format, required=False, location='json' )
 
 #CHANGE_NAME
 change_name_parser = reqparse.RequestParser()
@@ -40,7 +52,7 @@ change_name_parser.add_argument('new_name', type=str, required=True, help="Name 
 
 #CHANGE_EMAIL
 change_email_parser = reqparse.RequestParser()
-change_email_parser.add_argument('new_email',type=str, required=True, help="Email cannot be blank", location='json')
+change_email_parser.add_argument('new_email',type=validate_email_format, required=True, help="Email cannot be blank", location='json')
 change_email_parser.add_argument('password', type=str, required=True, help="Password cannot be blank", location='json')
 
 #RESET_PASSWORD
@@ -54,7 +66,7 @@ upload_avatar_parser.add_argument('avatar', type=FileStorage, location='files', 
 
 # FORGOT PASSWORD
 forgot_password_parser = reqparse.RequestParser()
-forgot_password_parser.add_argument('email',type=str, required=True, help="Email cannot be blank", location='json')
+forgot_password_parser.add_argument('email',type=validate_email_format, required=True, help="Email cannot be blank", location='json')
 
 #  SET_NEW_PASSWORD
 set_new_password_parser = reqparse.RequestParser()
