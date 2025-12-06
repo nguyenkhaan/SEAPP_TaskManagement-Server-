@@ -1,11 +1,11 @@
 import requests
-import os
+import os 
 from ..models import db
 from ..models.user_model import User
 from werkzeug.security import check_password_hash, generate_password_hash
 from .jwt_service import decode_google_token
 import cloudinary.uploader
-import uuid
+import uuid 
 from flask_jwt_extended import create_access_token
 
 def createUser(name:str, email:str, password:str):
@@ -16,7 +16,7 @@ def createUser(name:str, email:str, password:str):
 
 def getUserById(userId : int):
     user = db.session.get(User, userId)
-    return user.to_dict()
+    return user.to_dict()    
 
 def getUserByEmail(email:str):
     user = db.session.execute(
@@ -32,45 +32,44 @@ def checkUser(id:int = -1, email:str = "", password:str = ""):
         user = db.session.execute(
             db.select(User).filter_by(email = email)
         ).scalar_one_or_none()
-
+        
         if(not user):
             return None
-
+        
         if(check_password_hash(user.get_password(), password)):
             return user.to_dict()
     elif(id >= 0):
-        print("ID")
         user = User.query.get(id)
         if(not user):
             return None
-
+        
         if(check_password_hash(user.get_password(), password)):
             return user.to_dict()
     return None
 
-def getUserIDByEmail(email):
-    user_id = db.session.query(User.id).filter(email == User.email).first()
-    return str(user_id[0])
+def getUserIDByEmail(email): 
+    user_id = db.session.query(User.id).filter(email == User.email).first() 
+    return str(user_id[0])  
 
 def checkEmail(email):
-    chk = db.session.query(1).filter(email == User.email).first()
-    if chk: return True
-    return False
+    chk = db.session.query(1).filter(email == User.email).first() 
+    if chk: return True 
+    return False 
 
 def updateUserById(id, name = None, email = None):
     user = User.query.get(id)
 
     if(user is None): return None
-    if name is not None:
+    if name is not None: 
         user.name = name
-    if email is not None:
-        user.email = email  # Chi thuc hien update name va email
+    if email is not None: 
+        user.email = email  # Chi thuc hien update name va email 
 
-    db.session.commit()
+    db.session.commit() 
     return {
         "id": id,
         "name": name if name is not None else None,
-        "email": email if email is not None else None,
+        "email": email if email is not None else None, 
     }
 
 def changeEmail(id, new_email, password):
@@ -88,9 +87,9 @@ def changeEmail(id, new_email, password):
             "message": "Your email address has been successfully changed.",
             "data": {
                 "user": user.to_dict()
-            }
+            }            
         }
-
+    
     return {
         "success": False,
         "message": "Wrong password."
@@ -106,9 +105,9 @@ def changeName(id, new_name):
             "message": "Your name has been successfully changed.",
             "data": {
                 "user": user.to_dict()
-            }
+            }            
         }
-
+    
     return {
         "success": False,
         "message": "User not found."
@@ -124,9 +123,9 @@ def resetPassword(id, old_password, new_password):
             "message": "Your password has been updated successfully.",
             "data": {
                 "user": user.to_dict()
-            }
+            }            
         }
-
+    
     return {
         "success": False,
         "message": "Wrong password."
@@ -138,11 +137,11 @@ def uploadAvatar(id, file='', url=''):
             user = User.query.get(id)
             if(user.avatar_url):
                 cloudinary.uploader.destroy(user.avatar_url)
-            upload_result = cloudinary.uploader.upload(file)
-            user.avatar_url = upload_result['public_id']
+            upload_resutl = cloudinary.uploader.upload(file)
+            user.avatar_url = upload_resutl['public_id']
             db.session.commit()
             user_data = user.to_dict()
-            user_data['avatar_url'] = upload_result['secure_url']
+            user_data['avatar_url'] = upload_resutl['secure_url']
             return {
                 "success": True,
                     "message": "Your avatar has been updated successfully.",
@@ -154,11 +153,11 @@ def uploadAvatar(id, file='', url=''):
             user = User.query.get(id)
             if(user.avatar_url):
                 cloudinary.uploader.destroy(user.avatar_url)
-            upload_result = cloudinary.uploader.upload(url)
-            user.avatar_url = upload_result['public_id']
+            upload_resutl = cloudinary.uploader.upload(url)
+            user.avatar_url = upload_resutl['public_id']
             db.session.commit()
             user_data = user.to_dict()
-            user_data['avatar_url'] = upload_result['secure_url']
+            user_data['avatar_url'] = upload_resutl['secure_url']
             return {
                 "success": True,
                     "message": "Your avatar has been updated successfully.",
@@ -175,7 +174,7 @@ def uploadAvatar(id, file='', url=''):
 
 def setNewPassword(id:int, new_password:str):
     user = User.query.get(id)
-    if(user == None):
+    if(user == None): 
         return None
     user.password = generate_password_hash(new_password)
     db.session.commit()
@@ -184,42 +183,40 @@ def setNewPassword(id:int, new_password:str):
             "message": "Your password has been updated successfully.",
             "data": {
                 "user": user.to_dict()
-            }
+            }            
         }
 
-def getTokenFromCode(code):
-    url = 'https://oauth2.googleapis.com/token'
+def getTokenFromCode(code): 
+    url = 'https://oauth2.googleapis.com/token' 
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
-    }
+    } 
     data = {
-        "code": code,
-        "client_id": os.environ.get('OAUTH_CLIENT_CLIENT_ID_2'),
-        "client_secret": os.environ.get('OAUTH_CLIENT_SECRET_2'),
-        'redirect_uri': 'http://localhost:5173',
-        'grant_type': 'authorization_code'
+        "code": code, 
+        "client_id": os.environ.get('OAUTH_CLIENT_CLIENT_ID_2'), 
+        "client_secret": os.environ.get('OAUTH_CLIENT_SECRET_2'), 
+        'redirect_uri': 'http://localhost:5173', 
+        'grant_type': 'authorization_code' 
     }
-    r = requests.post(url , data=data , headers=headers)
-    if r:
-        return dict(r.json()).get('id_token')
-    return None
-def getUserInfoFromCode(code):
-    response_token_data = getTokenFromCode(code)
-    if not response_token_data:
-        return None
-    
-    user_data = decode_jwt_token(response_token_data)
-    print("user_data", user_data)
-    if user_data:   #user_data duoc decode thanh cong
-        return user_data
-    return None  #user_data decode that bai
+    r = requests.post(url , data=data , headers=headers) 
+    if r: 
+        return dict(r.json()).get('id_token') 
+    return None 
+def getUserInfoFromCode(code): 
+    response_token_data = getTokenFromCode(code) 
+    if not response_token_data: 
+        return None 
+    user_data = decode_google_token(response_token_data) 
+    print(user_data) 
+    if user_data:   #user_data duoc decode thanh cong  
+        return user_data 
+    return None  #user_data decode that bai 
 
-def createSession(email , password):
+def createSession(email , password): 
     user = checkUser(email = email, password = password)
-    if user:
+    if user: 
         access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
         if isinstance(access_token, bytes):
-            access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize
-        return access_token
-    return None
-
+            access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
+        return access_token 
+    return None 
