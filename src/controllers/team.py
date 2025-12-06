@@ -10,10 +10,10 @@ from ..models import db
 from flask_jwt_extended import jwt_required , get_jwt_identity
 from ..services.teams_service import queryTeam , createCodeForTeam , getTeamByID
 from ..utils import getImageUrl
-from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam
+from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam, getTeamCode
 
-from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser, user_role_parser
-from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup
+from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser, user_role_parser , team_code_parser , create_new_team_code_parser
+from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup , createNewTeamCode
 
 
 # Phai import theo kieu relative path ntn, bo dau . o dau di thi se thanh absolute path 
@@ -45,7 +45,7 @@ class Teams(Resource):
                 "success": False, 
                 "message": "User is not a member of this team" 
             } , 400 
-        response_data = getTeamByID(id) # Lat nua code tiep tai day 
+        response_data = getTeamByID(id , userID=userID) # Lat nua code tiep tai day 
         return response_data
         
     # 2. Tao team moi 
@@ -193,6 +193,52 @@ class TeamJoinCode(Resource):
                 "code": code 
             } 
         } , 201 
+class TeamCode(Resource): 
+    @jwt_required() 
+    def get(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if current_user_id is None: 
+            return {
+                "success": False, 
+                "message": "Code is invalid"
+            } , 401 
+        team_id = team_code_parser.parse_args().get('teamID') 
+        chk = isUserMember(userID=current_user_id , teamID=team_id) 
+        if not chk: 
+            return {
+                "success": False, 
+                "message": "You don't belong to this team"
+            }, 401 
+        code = getTeamCode(team_id) 
+        return {
+            "success": True, 
+            "code": code 
+        }
+    @jwt_required() 
+    def post(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if current_user_id is None: 
+            return {
+                "success": False, 
+                "message": "Code is invalid"
+            } , 401 
+        data = dict(create_new_team_code_parser.parse_args())
+        team_id = data.get('teamID') 
+        print(team_id) 
+        is_lead = isLeader(user_id=current_user_id , team_id=team_id) 
+        is_vice_lead = isViceLeader(user_id=current_user_id , team_id = team_id) 
+        if is_lead or is_vice_lead: 
+            code = createNewTeamCode(team_id)
+            return {
+                "success": True, 
+                "message": "This is the new code for your team", 
+                "code": code 
+            }
+        return {
+            "success": False, 
+            "message": "You don't have enough permission", 
+        } , 403 
+
 
 # Tham gia nhom 
 # Yeu cau phai co jwt de tien hanh join nhom 
@@ -358,3 +404,4 @@ team_api.add_resource(UserWithTeam , '/user')
 team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
 team_api.add_resource(TeamJoin , '/join')
 team_api.add_resource(TeamRole , '/role')
+team_api.add_resource(TeamCode , '/code/team')

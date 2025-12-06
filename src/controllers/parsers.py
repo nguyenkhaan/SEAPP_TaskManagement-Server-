@@ -170,3 +170,15 @@ leader_kick_parser.add_argument("userID" , type = int , required = True , help =
 # GET TEAM ROLE 
 user_role_parser = reqparse.RequestParser() 
 user_role_parser.add_argument('teamID' , type = int , required = True , help = "Missing team to get role" , location = "args")
+
+# GET TEAM CODE 
+team_code_parser = reqparse.RequestParser()  
+team_code_parser.add_argument('teamID' , type = int , required = True , help = "Missing team to get code" , location = 'args')
+
+# CREATE NEW TEAM CODE 
+create_new_team_code_parser = reqparse.RequestParser() 
+create_new_team_code_parser.add_argument('teamID' , type = int , required = True , help = "Missing team" , location = 'json') 
+
+# Search a task 
+search_task_by_name = reqparse.RequestParser() 
+search_task_by_name.add_argument('searchText' , type = str, required = False , location = 'json') 

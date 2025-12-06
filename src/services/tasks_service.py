@@ -468,3 +468,18 @@ def searchTasks(user_id, query, team_id=None, status=None, important=None,urgent
             "results": results
         }
     }
+
+def searchTaskByName(user_id, text):
+    if not text or text.strip() == "":
+        return []
+    search_text = f"%{text}%"
+
+    tasks = (
+        Task.query
+            .join(assignment_association, Task.id == assignment_association.c.task_id)
+            .filter(assignment_association.c.user_id == user_id)
+            .filter(Task.title.ilike(search_text))
+            .all()
+    )
+
+    return [task.to_dict_to_send() for task in tasks]

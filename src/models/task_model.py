@@ -24,3 +24,13 @@ class Task(db.Model):
             "status": self.status, 
             #Them cot creaatedAt sau 
          }
+    def to_dict_to_send(self): 
+        return {
+            "taskID": self.id, 
+            "title": self.title, 
+            "description": self.description, 
+            "dueTime": str(self.due_time), 
+            "priority": [self.important , self.urgent], 
+            "status": self.status, 
+            #Them cot creaatedAt sau 
+         }

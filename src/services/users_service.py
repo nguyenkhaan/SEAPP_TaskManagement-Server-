@@ -113,8 +113,8 @@ def changeName(id, new_name):
         "message": "User not found."
     }
 
-def resetPassword(id, old_password, new_password):
-    if(checkUser(id=id, password=old_password)):
+def resetPassword(id, old_password, new_password , login_method = 'account'):
+    if(checkUser(id=id, password=old_password) or login_method == 'google'):
         user = User.query.get(id)
         user.password = generate_password_hash(new_password)
         db.session.commit()

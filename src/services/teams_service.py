@@ -26,11 +26,13 @@ def isMember(user_id, team_id):
 
 def isViceLeader(user_id, team_id):
     chk = db.session.query(1).filter(Team.id == team_id).filter(Team.vice_leader_id == user_id).first() 
+    
     if chk: return True 
     return False 
 
 def isLeader(user_id, team_id):
     chk = db.session.query(1).filter(Team.id == team_id).filter(Team.leader_id == user_id).first() 
+    # leader_id = db.session.query(Team.leader_id).filter(Team.id == team_id).filter(Team.leader_id == user_id).first() 
     if chk: return True 
     return False 
 
@@ -129,7 +131,7 @@ def uploadTeamImage(team , file = '' , type = 'icon'):
             team.banner_url = upload_result['public_id']
             return upload_result['secure_url']
 #Lay thong tin cua team theo id 
-def getTeamByID(id): 
+def getTeamByID(id , userID): 
     Leader = aliased(User) 
     ViceLeader = aliased(User) 
     
@@ -144,17 +146,24 @@ def getTeamByID(id):
             "success": False, 
             "message": "Team not found"
         } , 401 
+    role = "member" 
     leader = exists[5].to_dict() 
+    if userID == leader['id']: 
+        role = "leader"
     vice_leader = None 
     if exists[6]: 
         vice_leader = exists[6].to_dict() 
-        
+        if userID == vice_leader['id']: 
+            role = "vice_leader"
+    code = db.session.query(InviteCode.code).filter(InviteCode.team_id == id).first() 
     team = {
         "id": exists[0], 
         "name": exists[1], 
         "icon": getImageUrl(str(exists[2])),
         "banner": getImageUrl(str(exists[3])),
-        "description": str(exists[4]) 
+        "description": str(exists[4]), 
+        "code": code[0], 
+        
     } 
 
     users = db.session.query(User).join(team_member_association , team_member_association.c.user_id == User.id).filter(team_member_association.c.team_id == id).all() 
@@ -173,7 +182,8 @@ def getTeamByID(id):
         "teamData": team, 
         "leader": leader, 
         "viceLeader": vice_leader, 
-        "members": users 
+        "members": users, 
+        "role": role 
     } , 200 
     
     return response_data 
@@ -391,3 +401,16 @@ def deleteUserFromGroup(userID , teamID):
     db.session.execute(stmp) # Thuc hien cau lenh 2 
     db.session.commit() 
     return True 
+
+def getTeamCode(teamID): 
+    code = db.session.query(InviteCode.code).filter(InviteCode.team_id == teamID).first() 
+    return code[0] 
+
+def createNewTeamCode(teamID): 
+    code = createCode() 
+    time_expred = addTime(datetime=datetime.datetime.now() , second=604800) 
+    team_code = db.session.query(InviteCode).filter(InviteCode.team_id == teamID).first() 
+    team_code.code = code 
+    team_code.time_expired = time_expred
+    db.session.commit() 
+    return code 

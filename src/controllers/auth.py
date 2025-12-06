@@ -125,7 +125,7 @@ class Login(Resource):
         user = checkUser(email = email, password = password)
         print(user) 
         if(user):
-            access_token = create_access_token(identity=str(user['id']), additional_claims={'jti': uuid.uuid4().hex})
+            access_token = create_access_token(identity=str(user['id']), additional_claims={'login_method': 'account', 'jti': uuid.uuid4().hex})
             if isinstance(access_token, bytes):
                 access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
             return {
@@ -311,7 +311,7 @@ class ForgotPassword(Resource):
             'jti': uuid.uuid4().hex
         }
         reset_password_token = create_access_token(identity=str(user_id), additional_claims=custom_claims, expires_delta=timedelta(minutes=30))
-        reset_password_page_url = f"https://youtube.com/forgot-password?reset_password_token={reset_password_token}"
+        reset_password_page_url = f"http://localhost:5173/reset-password?reset_password_token={reset_password_token}"
 
         msg = Message('Reset Your NoTask Password', recipients=[email])
         msg.html = f"""<h1>NoTask</h1>

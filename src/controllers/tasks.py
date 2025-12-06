@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .parsers import update_task_parser, search_tasks_parser, create_task_parser
+from .parsers import update_task_parser, search_tasks_parser, create_task_parser , search_task_by_name
 
 
 from ..services.tasks_service import (
@@ -14,7 +14,8 @@ from ..services.tasks_service import (
     deleteTaskById,
     searchTasks,
     createTask, # Da noi 
-    getTeamTasks
+    getTeamTasks, 
+    searchTaskByName 
 )
 
 tasks_bp = Blueprint('tasks', __name__)
@@ -81,7 +82,7 @@ class TaskDetail(Resource):
         result = deleteTaskById(user_id=user_id, task_id=taskId)
         return result
 
-class TaskSearch(Resource):
+class TaskFilter(Resource):
 
     @jwt_required()
     def get(self):
@@ -102,6 +103,17 @@ class TaskSearch(Resource):
         )
         return result
 
+class TaskSearch(Resource): 
+    @jwt_required() 
+    def post(self): 
+        user_id = int(get_jwt_identity()) 
+        query = search_task_by_name.parse_args() 
+        text = query.get('searchText')
+        res = searchTaskByName(user_id=user_id , text=text) 
+        return {
+            "success": True, 
+            "tasks": res 
+        } 
 
 class TeamTasksResource(Resource):
 
@@ -125,5 +137,6 @@ tasks_api.add_resource(TaskStatisticsByTeam, '/statistics/teams/<string:teamId>'
 tasks_api.add_resource(TasksOverview, '/overview')
 tasks_api.add_resource(AllUserTasks, '/me')
 tasks_api.add_resource(TaskDetail, '/<string:taskId>')
-tasks_api.add_resource(TaskSearch, '/search')
+tasks_api.add_resource(TaskFilter, '/filter')
 tasks_api.add_resource(TeamTasksResource, '/teams/<string:teamId>/tasks')
+tasks_api.add_resource(TaskSearch , '/search-tasks/user')
