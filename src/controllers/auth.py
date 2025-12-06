@@ -121,7 +121,6 @@ class Login(Resource):
         login_args = login_parser.parse_args()
         email = login_args.get('email')
         password = login_args.get('password')
-        print(email , password) 
         user = checkUser(email = email, password = password)
         print(user) 
         if(user):
@@ -175,7 +174,7 @@ class LoginGoogle(Resource):
             return {
                 "success": False, 
                 "message": "Code is invalid"
-            }
+            }, 404
         email = verify_result.get('email') 
         name  = verify_result.get('name') 
         chk = checkEmail(email) 
