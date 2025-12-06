@@ -77,13 +77,14 @@ def getTaskStatistics(user_id):
         Task.id.in_(user_tasks_stmt)
     ).group_by(Task.status)
 
+    # Lay ra danh sach cac tasks 
     result = db.session.execute(total_tasks_query).all()
 
     total = sum([c for s, c in result])
 
     if total == 0:
         return {"success": True, "data": {"totalTasks": 0, "completedPercentage": 0.0, "inProgressPercentage": 0.0,
-                                          "toDoPercentage": 0.0}}
+                                          "toDoPercentage": 0.0 , "tasks": []}}
 
     stats = {s: c for s, c in result}
 
@@ -97,7 +98,7 @@ def getTaskStatistics(user_id):
             "totalTasks": total,
             "completedPercentage": round((completed / total) * 100, 1),
             "inProgressPercentage": round((in_progress / total) * 100, 1),
-            "toDoPercentage": round((to_do/ total) * 100, 1)
+            "toDoPercentage": round((to_do/ total) * 100, 1), 
         }
     }
 
@@ -142,28 +143,42 @@ def getTaskStatisticsByTeamId(user_id, team_id):
         }
     }
 def getTasksOverview(user_id):
+    # today tasks 
     today = date.today()
     due_today_stmt = select(Task).join(assignment_association,
                                        assignment_association.c.task_id == Task.id).where(
         assignment_association.c.user_id == user_id,
         func.date(Task.due_time) == today,
         Task.status != 'completed'
-    ).limit(5)
+    ).limit(2)
     due_today_query = db.session.scalars(due_today_stmt).all()
     due_today = [map_task_to_dict(task) for task in due_today_query]
+
+    # completed 
     recent_completed_stmt = select(Task).join(assignment_association,
                                               assignment_association.c.task_id == Task.id).where(
         assignment_association.c.user_id == user_id,
         Task.status == 'completed'
-    ).order_by(Task.due_time.desc()).limit(7)
+    ).order_by(Task.due_time.desc()).limit(2)
     recent_completed_query = db.session.scalars(recent_completed_stmt).all()
     recent_completed = [map_task_to_dict(task) for task in recent_completed_query]
+
+    # In Progress 
+
+    in_progress_stmt = select(Task).join(assignment_association,
+                                   assignment_association.c.task_id == Task.id).where(
+    assignment_association.c.user_id == user_id,Task.status == 'in progress'
+    ).order_by(Task.due_time.desc()).limit(1)
+    in_progress_query = db.session.scalars(in_progress_stmt).all()
+    in_progress = [map_task_to_dict(task) for task in in_progress_query]
+
 
     return {
         "success": True,
         "data": {
             "dueToday": due_today,
-            "recentCompleted": recent_completed
+            "recentCompleted": recent_completed, 
+            "inProgress": in_progress
         }
     }
 

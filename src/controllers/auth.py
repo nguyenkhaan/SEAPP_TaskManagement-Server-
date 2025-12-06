@@ -188,7 +188,7 @@ class LoginGoogle(Resource):
         else: id = getUserIDByEmail(email)
         
         # Khoi tao phien dang nhap 
-        access_token = create_access_token(identity=str(id), additional_claims={'jti': uuid.uuid4().hex})
+        access_token = create_access_token(identity=str(id), additional_claims={'login_method': 'google', 'jti': uuid.uuid4().hex})
         if isinstance(access_token, bytes):
             access_token = access_token.decode("utf-8") 
         print(access_token) 
