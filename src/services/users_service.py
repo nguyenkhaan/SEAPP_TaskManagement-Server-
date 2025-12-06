@@ -7,6 +7,7 @@ from .jwt_service import decode_google_token
 import cloudinary.uploader
 import uuid 
 from flask_jwt_extended import create_access_token
+from ..middlewares.cache import data_caching
 
 def createUser(name:str, email:str, password:str):
     new_user = User(name=name, email=email, password=password )
@@ -14,6 +15,7 @@ def createUser(name:str, email:str, password:str):
     db.session.commit()
     return new_user.to_dict()
 
+@data_caching(key = "user:{userId}", ttl = 60 * 60)
 def getUserById(userId : int):
     user = db.session.get(User, userId)
     return user.to_dict()    
@@ -46,6 +48,7 @@ def checkUser(id:int = -1, email:str = "", password:str = ""):
         if(check_password_hash(user.get_password(), password)):
             return user.to_dict()
     return None
+
 
 def getUserIDByEmail(email): 
     user_id = db.session.query(User.id).filter(email == User.email).first() 
