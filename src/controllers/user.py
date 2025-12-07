@@ -104,11 +104,6 @@ class UploadAvatar(Resource):
 
 
 
-
-
-
-
-
 user_api.add_resource(User, '/')
 user_api.add_resource(ChangeEmail, '/change-email')
 user_api.add_resource(ChangeName, '/change-name')

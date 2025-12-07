@@ -6,7 +6,7 @@ from google.auth.transport import requests
 def decode_google_token(token: str):
     try:
         # Verify token với Google
-        idinfo = id_token.verify_oauth2_token(token, requests.Request(), None)
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), audience=None, clock_skew_in_seconds=60)
         # Nếu cần, bạn có thể check aud (client_id) để đảm bảo token là của app bạn
         if not idinfo.get("email_verified"):
             return None
