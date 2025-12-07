@@ -1,212 +1,134 @@
-# TỔNG QUAN VỀ DỰ ÁN
+# **NOTASK WEBSITE**
 
-## 1. Hướng dẫn chạy dự án
+---
 
-### Bước 1 --- Clone dự án & tạo môi trường ảo
+<p align="center">
+   <a href="https://nextjs.org/">
+   <img alt="Static Badge" src="https://img.shields.io/badge/reactjs-20-%2361DBFB?style=for-the-badge&logo=react">
+   </a>
+   <a> 
+   <img alt="Static Badge" src="https://img.shields.io/badge/tailwindcss-4-blue?style=for-the-badge&logo=tailwindcss&logoColor=blue">
+   </a>
+    <a> 
+    <img alt="Static Badge" src="https://img.shields.io/badge/ReactQuery-Latest-%23FF4154?style=for-the-badge&logo=reactquery&logoColor=%23FF4154">
+   </a>
+   <img alt="Static Badge" src="https://img.shields.io/badge/python-3-%233776AB?style=for-the-badge&logo=python&logoColor=%233776AB">
+   </a>
+   <a href="https://nextjs.org/">
+   <img alt="Static Badge" src="https://img.shields.io/badge/flask-3.1.2-%23646464?style=for-the-badge&logo=flask&logoColor=%23646464">
+   </a>
+   <a href="https://nextjs.org/">
+   <img alt="Static Badge" src="https://img.shields.io/badge/sqlalchemy-3.1.1-green?style=for-the-badge&logo=sqlalchemy&logoColor=green">
+   </a>
+   <a href="https://nextjs.org/">
+   <img alt="Static Badge" src="https://img.shields.io/badge/mysql-8.4-%23F29111?style=for-the-badge&logo=mysql">
+   </a>
+   <a> 
+   <img alt="Static Badge" src="https://img.shields.io/badge/googleoauth-2-%23EA4335?style=for-the-badge&logo=googleauthenticator&logoColor=%23EA4335">
+   </a>
+   <a> 
+   <img alt="Static Badge" src="https://img.shields.io/badge/Github-latest-%23181717?style=for-the-badge&logo=GitHub&logoColor=%23181717">
+   </a>
+   <a> 
+   <img alt="Static Badge" src="https://img.shields.io/badge/Docker-ready-%232496ED?style=for-the-badge&logo=Docker&logoColor=%232496ED">
+   </a>
+      <a> 
+<img alt="Static Badge" src="https://img.shields.io/badge/Axios-Latest-%235A29E4?style=for-the-badge&logo=axios&logoColor=%235A29E4">
 
-``` bash
-python -m venv env/
+   </a>
+</p>
+
+
+
+Welcome to the NoTask website. With features like team creation, seamless member onboarding, shared task boards, and real-time progress tracking, the platform ensures every project flows smoothly from start to finish. Whether you're managing a small group or coordinating across multiple teams, our system provides a clear and efficient way to assign tasks, monitor workloads, and work together toward common goals. Built for speed, simplicity, and teamwork — this is where productivity begins.
+
+---
+## 🏠 Features 
+- **Login/Register**: Securely authenticate or create a new account via your email to access platform
+- **Change Pasword, Email**: Update your account credentials and contact information with ease
+- **Create Team**: Form a new team and invite members to collaborate on shared tasks 
+- **Team Work**: Manage team members, assign roles, and track progress across group activities.
+- **Create Task**: Add new tasks with details, deadlines, and assignees to keep work organized.
+- **Update Task**: Update your deadline, tasks detail with ease 
+- **Update Profile**: Customize your personal information, avatar, and user settings.
+- **Dark Theme**: Dark theme provided 
+
+## 🚀 Quick start 
+### 1. Clone & Install 
+```bash 
+# Clone Front-end Repository 
+git clone https://github.com/RinWasBusted/SEAPP_TaskManagement-Client
+# Clone Back-end Repository 
+git clone https://github.com/RinWasBusted/SEAPP_TaskManagement-Server-
 ```
+### 2. API Integration 
+- Create a local `.ENV` files in the root project for public API Keys 
+- Please [Contact](https://www.facebook.com/kha.an.907155) for more informations. 
 
-### Bước 2 --- Kích hoạt môi trường ảo
+### 3. Docker  
+- Build and run with Docker Compose up 
+```bash
+docker compose up -d  
+```
+- **Note**: You must end process in port 3306 first. 
+```bash
+# See the PID 
+sudo lsof -i:3306 
+# End the process 
+sudo kill PID  
+```
+### 4. Dependencies 
+- Back-end 
+```bash 
+# Create a new virtual environment
+python -m venv env/
 
--   **Linux/MacOS**
+# Activate the virtual environment
+source env/bin/activate
 
-    ``` bash
-    source env/bin/activate
-    ```
-
--   **Windows**
-
-    ``` bash
-    env\Scripts\activate
-    ```
-
-### Bước 3 --- Cài đặt thư viện
-
-``` bash
+# Install all required dependencies
 pip install -r requirements.txt
 ```
 
-### Bước 4 --- Chạy dự án
-
--   Chạy database:
-
-    ``` bash
-    docker compose up -d
-    ```
-
--   Chạy server:
-
-    ``` bash
-    python main.py
-    ```
-
-### Bước 5 --- Cập nhật gói đã cài
-
-``` bash
-pip freeze > requirements.txt
+- Front-end 
+```bash 
+# Install all required dependencies 
+npm -f install 
 ```
-
-------------------------------------------------------------------------
-
-## 2. Cấu trúc dự án (Tree View)
-
-    SEAPP_TaskManagement-Server-
-    │── main.py: File chạy chính của chương trình 
-    │── requirements.txt
-    │── .env                 
-    │── template.py
-    │── template.sh
-    │
-    └── src/
-        │── api.py
-        │── __init__.py
-        │
-        ├── config/
-        │     └── Chứa các cấu hinfhc ho hệ thống 
-        │
-        ├── controllers/
-        │     └── ...
-        │
-        ├── models/
-        │     └── Nơi khai báo các Model cũng như biến db 
-        │
-        ├── middlewares/
-        │     └── ...
-        │
-        └── services/
-              └── Các hàm hỗ trợ logic 
-
-------------------------------------------------------------------------
-
-## 3. Hướng dẫn phát triển
-
-### 3.1. Cập nhật cấu trúc dữ liệu (migrations)
-
-``` bash
-flask -A main.py db init
-flask -A main.py db migrate
-flask -A main.py db upgrade
+### 5. Development 
+- Back-end 
+```bash
+python -m main.py  
 ```
-
-### 3.2. Bật gợi ý trong Python (VSCode)
-
-`Ctrl + Shift + P` → **Select Python Interpreter** → chọn `env/`
-
-### 3.3. Gửi dữ liệu JSON trong Flask
-
-``` python
-return data, status_code
+- Front-end 
+```bash
+npm run dev  
 ```
+### 6. Production 
+- You can visit [this website](http://localhost:5173) 
+## 🧩 Main Technologies 
+### 1. Front-end
+- **Javascript - Typescript** & logic resolve
+- **ReactJS 20** (UI, App Router, SPA)
+- **TailwindCSS 4.0** & custom design system
+- **React Query** & call API and caching 
+- **NPM** & animated, effects and toast feedback, 
+### 2. Back-end 
+- **Python** & logic back-end 
+- **Flask** (Build Server)
+- **Google OAuth** & login, register, session 
+- **JWT Token** & authentication/authorization  
+- **Mariadb** & database 
+### 3. Tools 
+- **Github** & Version management 
+- **Docker** & Docker Compose ready 
+- **Redis** & Server Caching 
 
-### 3.4. Tạo bảng không dùng class
+## 📄 Contact 
+- Dowload Inforgraphic:
+- Contact: Footer includes GitHub, LinkedIn, Email, Discord, Facebook links
+## 📝 License 
 
-``` python
-team_member_association = db.Table('team_members',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.user_id'), primary_key=True),
-    db.Column('team_id', db.Integer, db.ForeignKey('teams.team_id'), primary_key=True)
-)
-```
-
-------------------------------------------------------------------------
-
-## 4. Xác thực đăng nhập
-
-### 4.1. Luồng hoạt động
-
--   FE mở popup đăng nhập Google
--   OAuth xác thực
--   Google trả về: `id_token`, `access_token`, `code`
--   FE gửi dữ liệu xuống BE
--   BE verify token hoặc dùng `code` lấy token mới từ Google
-
-------------------------------------------------------------------------
-
-## Hướng 1: Xác thực qua JWT Token
-
--   BE nhận **id_token**
--   Verify JWT
--   Giải mã lấy thông tin người dùng
-
-------------------------------------------------------------------------
-
-## Hướng 2: Authorization Code (đang sử dụng)
-
-### FE gọi login qua Google OAuth
-
-``` js
-const login = useGoogleLogin({
-  onSuccess: (tokenResponse) => loginGoogleSuccess(tokenResponse),
-  onError: (error) => loginGoogleFailed(error),
-  flow: "auth-code",
-  scope: "openid email profile",
-});
-```
-
-### BE đổi code lấy access_token & id_token
-
-``` python
-def getToken(code):
-    url = "https://oauth2.googleapis.com/token"
-    headers = { "Content-Type": "application/x-www-form-urlencoded" }
-    data = {
-        "code": code,
-        "client_id": "YOUR_CLIENT_ID",
-        "client_secret": "YOUR_PUBLIC_KEY",
-        "redirect_uri": "http://localhost:5173",
-        "grant_type": "authorization_code"
-    }
-    r = requests.post(url, data=data, headers=headers)
-    if r.status_code == 200:
-        return r.json()
-    return None
-```
-
-### BE đổi toke lấy thông tin người dùng 
-
-```py
-def getUserInfoFromToken(code): 
-    print(code) 
-    response_token_data = getToken(code) 
-    print('Response token la: ' , response_token_data) 
-    if response_token_data: 
-        access_token = response_token_data.get('access_token') 
-        if access_token: 
-            headers = {"Authorization": f"Bearer {access_token}"}
-            r = requests.get("https://www.googleapis.com/oauth2/v3/userinfo", headers=headers)
-            if r.status_code == 200:
-                return r.json()
-            return None
-        else: return None 
-    else: 
-        return None  
-```
+MIT License. See [LICENSE.md](./LICENSE.md).
 
 ---
-### Các endpoint quan trọng: 
-/login: Khi người dùng đăng nhập thông qua email - password đã đăng kí   
-/login-google: Khi người dùng đăng nhập qua cơ chế google, dùng cách xác thực trên   
-/register: Dùng để đăng kí => Trả về 1 token cho FE   
-/verify: FE dùng nó để tiếp tục verify cái đã đăng kí   
-
-------------------------------------------------------------------------
-
-## Lưu ý khi cấu hình OAuth Google
-
--   **CLIENT_ID** -- đăng ký trên Google Cloud
--   **CLIENT_SECRET** -- đăng ký trên Google Cloud
--   **REDIRECT_URI**
-    -   Nếu **SPA** → URI của Frontend
-    -   Nếu **SSR / Backend** → URI của Backend
--   Phải đăng ký Redirect URI trên Google Cloud Console
-
-------------------------------------------------------------------------
-Qua trinh xac thuc: 
-Login by google: Verify -> FE 
-Login by user name and email => Login 
-Register by user name and email => Register => Gui 1 duong link de dan toi 1 trang FE Veirify, tren url co cai token => Nguoi dung mo trang nay ra => Trang Verify FE mo ra va luc nay ta se lum cai token o ben tren url => Gui request ve endpoint Verify => Tao tai khoan nguoi dung 
-
-## 5. Một số mã lỗi 
-308: Đường link tự động redirect sang dạng mới. Ví dụ: user thì tự biến thành user/ 
-422: Thông tin cung cấp không đúng dạng hoặc không đầy đủ
