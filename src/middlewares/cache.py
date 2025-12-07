@@ -3,7 +3,8 @@ import ast
 import inspect
 from functools import wraps
 
-def data_caching(key: str, ttl:int):
+
+def data_caching(key: str, ttl:int, tags:list = []):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):

@@ -7,7 +7,7 @@ from .jwt_service import decode_google_token
 import cloudinary.uploader
 import uuid 
 from flask_jwt_extended import create_access_token
-from ..middlewares.cache import data_caching
+import json
 
 def createUser(name:str, email:str, password:str):
     new_user = User(name=name, email=email, password=password )
@@ -15,10 +15,9 @@ def createUser(name:str, email:str, password:str):
     db.session.commit()
     return new_user.to_dict()
 
-@data_caching(key = "user:{userId}", ttl = 60 * 60)
 def getUserById(userId : int):
     user = db.session.get(User, userId)
-    return user.to_dict()    
+    return user.to_dict()  
 
 def getUserByEmail(email:str):
     user = db.session.execute(
@@ -136,37 +135,25 @@ def resetPassword(id, old_password, new_password):
 
 def uploadAvatar(id, file='', url=''):
     try:
+        user = User.query.get(id)
         if(file):
-            user = User.query.get(id)
             if(user.avatar_url):
                 cloudinary.uploader.destroy(user.avatar_url)
             upload_resutl = cloudinary.uploader.upload(file)
-            user.avatar_url = upload_resutl['public_id']
-            db.session.commit()
-            user_data = user.to_dict()
-            user_data['avatar_url'] = upload_resutl['secure_url']
-            return {
-                "success": True,
-                    "message": "Your avatar has been updated successfully.",
-                    "data": {
-                        "user": user_data
-                    }
-            }
         if(url):
-            user = User.query.get(id)
             if(user.avatar_url):
                 cloudinary.uploader.destroy(user.avatar_url)
             upload_resutl = cloudinary.uploader.upload(url)
-            user.avatar_url = upload_resutl['public_id']
-            db.session.commit()
-            user_data = user.to_dict()
-            user_data['avatar_url'] = upload_resutl['secure_url']
-            return {
-                "success": True,
-                    "message": "Your avatar has been updated successfully.",
-                    "data": {
-                        "user": user_data
-                    }
+        user.avatar_url = upload_resutl['public_id']
+        db.session.commit()
+        user_data = user.to_dict()
+        user_data['avatar_url'] = upload_resutl['secure_url']
+        return {
+            "success": True,
+                "message": "Your avatar has been updated successfully.",
+                "data": {
+                    "user": user_data
+                }
             }
     except Exception as e:
         return {
@@ -223,4 +210,3 @@ def createSession(email , password):
             access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
         return access_token 
     return None 
-
