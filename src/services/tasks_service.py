@@ -8,6 +8,7 @@ from sqlalchemy.sql import exists
 from datetime import datetime, date, timedelta
 from flask import jsonify
 from sqlalchemy.orm import joinedload
+from .teams_service import isMember
 
 def isMember(user_id, team_id):
     stmt = select(team_member_association).where(
@@ -134,7 +135,10 @@ def getTaskStatisticsByTeamId(user_id, team_id):
             "totalTasks": total,
             "completedPercentage": round((completed / total) * 100, 1),
             "inProgressPercentage": round((in_progress / total) * 100, 1),
-            "toDoPercentage": round((to_do / total) * 100, 1)
+            "toDoPercentage": round((to_do / total) * 100, 1), 
+            "compltedTasks": completed, 
+            "inProgressTasks": in_progress, 
+            "toDoTasks": to_do 
         }
     }
 def getTasksOverview(user_id):
@@ -217,8 +221,9 @@ def getTaskDetail(user_id, task_id):
         return {"success": False, "error": {"code": "NOT_FOUND", "message": "Task not found."}}, 404
 
     team_id = task.team_id
-    if not isTaskAssignedToUser(user_id, task_id) and \
-            not (isLeader(user_id, team_id) or isViceLeader(user_id, team_id)):
+    chk = isMember(user_id , team_id) 
+
+    if not chk: 
         return {"success": False,
                 "error": {"code": "FORBIDDEN", "message": "User does not have access to this task."}}, 403
     assignees, _ = getTaskUser(task_id)
@@ -230,7 +235,8 @@ def getTaskDetail(user_id, task_id):
         "data": {
             **task_data,
             "assignees": assignees
-        }
+        }, 
+        "teamId": team_id 
     }
 
 
@@ -263,7 +269,8 @@ def updateTaskById(user_id, task_id, data):
         return {
             "success": True,
             "message": "Task updated successfully",
-            "data": map_task_to_dict(task)
+            "data": map_task_to_dict(task), 
+            "teamId": team_id 
         }
     except Exception as e:
         db.session.rollback()
@@ -278,20 +285,44 @@ def deleteTaskById(user_id, task_id):
         return {"success": True, "message": "Task deleted successfully"}
 
     team_id = task.team_id
+
     if not (isLeader(user_id, team_id) or isViceLeader(user_id, team_id)):
-        return {"success": False,
-                "error": {"code": "FORBIDDEN", "message": "Only Leader or ViceLeader can delete tasks."}}, 403
+        return {
+            "success": False,
+            "error": {
+                "code": "FORBIDDEN",
+                "message": "Only Leader or ViceLeader can delete tasks."
+            }
+        }, 403
 
     try:
+        # XÓA CÁC DÒNG TRONG BẢNG association (db.Table)
+        db.session.execute(
+            assignment_association.delete().where(
+                assignment_association.c.task_id == task_id
+            )
+        )
+
+        # XÓA TASK
         db.session.delete(task)
         db.session.commit()
 
-        return {"success": True, "message": "Task deleted successfully"}
+        return {
+            "success": True,
+            "message": "Task deleted successfully",
+            "teamId": team_id
+        }
+
     except Exception as e:
         db.session.rollback()
-        print(f"Delete Task Error: {e}")
-        return {"success": False, "error": {"code": "INTERNAL_ERROR", "message": "Could not delete task."}}, 500
-
+        print("Delete Task Error:", e)
+        return {
+            "success": False,
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": str(e)
+            }
+        }, 500
 
 def getTeamTasks(user_id, team_id):
 
@@ -311,6 +342,9 @@ def getTeamTasks(user_id, team_id):
             "title": task.title,
             "description": task.description,
             "dueTime": task.due_time.isoformat() + 'Z' if task.due_time else None,
+            "important": task.important, 
+            "urgent": task.urgent, 
+            "status": task.status 
         }
         for task in tasks_query
     ]

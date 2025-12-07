@@ -220,4 +220,3 @@ def createSession(email , password):
             access_token = access_token.decode("utf-8")   #Chuyen doi ve lai thanh kieu du lieu str de JSON Serialize 
         return access_token 
     return None 
-
