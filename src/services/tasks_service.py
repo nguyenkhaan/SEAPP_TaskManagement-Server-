@@ -496,10 +496,10 @@ def saveTask(user_id , team_id , task_id):
         return None 
     stmp = assignment_association.select().where(
         assignment_association.c.user_id == user_id, 
-        assignment_association.c.task_id == user_id 
+        assignment_association.c.task_id == task_id 
     )
-    res = db.session.execute(stmp) 
-    if res: 
+    res = db.session.execute(stmp).fetchone() 
+    if res is not None: 
         return {
             "success": True, 
             "message": "You already save this"
@@ -518,11 +518,11 @@ def saveTask(user_id , team_id , task_id):
 def unSavedTask(user_id , task_id): 
     stmp = assignment_association.select().where(
         assignment_association.c.user_id == user_id, 
-        assignment_association.c.task_id == user_id 
+        assignment_association.c.task_id == task_id 
     )
 
-    res = db.session.execute(stmp) 
-    if not res: 
+    res = db.session.execute(stmp).fetchone() 
+    if res is None: 
         return None 
     
     stmt = assignment_association.delete().where(
