@@ -104,8 +104,7 @@ class Teams(Resource):
                 user_id = current_user_id
             )
         db.session.execute(stmt)
-        db.session.commit()
-
+        db.session.commit() 
         return {
             "success": True,
             "message": "Your team has been completed successfully. You can join with the code below",
