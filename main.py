@@ -30,5 +30,5 @@ def index():
     }
 
 if __name__ == '__main__': 
-    print('Server khoi dong thanh cong tai: ' , url)
-    app.run(port=dev_config.PORT , debug=dev_config.DEBUG)
+    port = int(os.environ.get('port')) 
+    app.run(port = port , host='0.0.0.0')
