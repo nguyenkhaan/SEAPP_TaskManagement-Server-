@@ -6,7 +6,19 @@ from flask_cors import CORS, cross_origin
 
 app = create_app()
 dev_config = DevConfig()
-CORS(app , supports_credentials=True) 
+CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/*": {
+        "origins": [
+            "https://seapptaskmanagementclient.vercel.app",
+            "http://localhost:5173",
+            "https://seapptaskmanagementclient.vercel.app/",
+            "http://localhost:5173/",
+        ]
+    }}
+)
+
 url = 'http://localhost:' + str(dev_config.PORT) 
 
 

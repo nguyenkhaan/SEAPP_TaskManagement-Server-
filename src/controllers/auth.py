@@ -49,7 +49,7 @@ class Register(Resource):
             verification_token = verification_token.decode("utf-8") 
         # verify_url = url_for('auth.verify', _external=True, token = verification_token )
 
-        verify_url = f'http://localhost:5173/verify?token={verification_token}'  # Duong link dung de verify email 
+        verify_url = f'https://seapptaskmanagementclient.vercel.app/verify?token={verification_token}'  # Duong link dung de verify email 
 
         msg = Message('NoTask email verification', recipients=[email])
         msg.html = f"""<div class="header">
@@ -310,7 +310,7 @@ class ForgotPassword(Resource):
             'jti': uuid.uuid4().hex
         }
         reset_password_token = create_access_token(identity=str(user_id), additional_claims=custom_claims, expires_delta=timedelta(minutes=30))
-        reset_password_page_url = f"http://localhost:5173/reset-password?reset_password_token={reset_password_token}"
+        reset_password_page_url = f"https://seapptaskmanagementclient.vercel.app/reset-password?reset_password_token={reset_password_token}"
 
         msg = Message('Reset Your NoTask Password', recipients=[email])
         msg.html = f"""<h1>NoTask</h1>
