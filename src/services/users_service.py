@@ -195,7 +195,7 @@ def getTokenFromCode(code):
         "code": code, 
         "client_id": os.environ.get('OAUTH_CLIENT_CLIENT_ID_2'), 
         "client_secret": os.environ.get('OAUTH_CLIENT_SECRET_2'), 
-        'redirect_uri': 'http://localhost:5173', 
+        'redirect_uri': 'https://seapptaskmanagementclient.vercel.app/', 
         'grant_type': 'authorization_code' 
     }
     r = requests.post(url , data=data , headers=headers) 
