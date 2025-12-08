@@ -33,12 +33,12 @@ def create_app(config_object=DevConfig):
     jwt = JWTManager(app)
     @jwt.token_in_blocklist_loader
     def check_jwt_blacklist(jwt_header, jwt_payload):
-        jti = jwt_payload.get('jti')
-        if(jwt_blacklist is None): return False
+        # jti = jwt_payload.get('jti')
+        # if(jwt_blacklist is None): return False
 
-        is_blacklisted = jwt_blacklist.get(jti)
+        # is_blacklisted = jwt_blacklist.get(jti)
 
-        if(is_blacklisted): return True
+        # if(is_blacklisted): return True
         
         return False
 
