@@ -15,7 +15,9 @@ from ..services.tasks_service import (
     searchTasks,
     createTask, # Da noi 
     getTeamTasks, 
-    searchTaskByName 
+    searchTaskByName, 
+    saveTask, 
+    unSavedTask 
 )
 
 tasks_bp = Blueprint('tasks', __name__)
@@ -131,7 +133,44 @@ class TeamTasksResource(Resource):
         result = getTeamTasks(user_id=user_id, team_id=teamId)
         return result
 
+class TaskSaving(Resource): 
+    @jwt_required() 
+    def post(self):     
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Token is failed or invalid" 
+            } 
+        data = dict(request.json) 
+        task_id = data.get('task_id') 
+        team_id = data.get('team_id') 
+        save_result = saveTask(user_id=current_user_id , team_id=team_id , task_id=task_id) 
 
+        if not save_result: 
+            return {
+                "success": False, 
+
+            } , 401 
+        return save_result 
+    @jwt_required() 
+    def delete(self): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Token is failed or invalid" 
+            } 
+        data = dict(request.form) 
+        task_id = data.get('task_id') 
+        result = unSavedTask(task_id=task_id ,user_id=current_user_id)
+        if not result: 
+            return {
+                "success": False, 
+                "message": "Unsave failed"
+            } , 401 
+        return result
+    
 tasks_api.add_resource(TaskStatistics, '/statistics')
 tasks_api.add_resource(TaskStatisticsByTeam, '/statistics/teams/<string:teamId>')
 tasks_api.add_resource(TasksOverview, '/overview')
@@ -140,3 +179,4 @@ tasks_api.add_resource(TaskDetail, '/<string:taskId>')
 tasks_api.add_resource(TaskFilter, '/filter')
 tasks_api.add_resource(TeamTasksResource, '/teams/<string:teamId>/tasks')
 tasks_api.add_resource(TaskSearch , '/search-tasks/user')
+tasks_api.add_resource(TaskSaving , '/save/user')

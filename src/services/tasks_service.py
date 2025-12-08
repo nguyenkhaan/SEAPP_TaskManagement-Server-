@@ -9,7 +9,9 @@ from datetime import datetime, date, timedelta
 from flask import jsonify
 from sqlalchemy.orm import joinedload
 from .teams_service import isMember
-
+def isTeamTask(team_id , task_id): 
+    chk = db.session.query(Task.team_id).filter(Task.id == task_id).scalar() 
+    return int(chk) == int(team_id)  
 def isMember(user_id, team_id):
     stmt = select(team_member_association).where(
         team_member_association.c.user_id == user_id,
@@ -481,5 +483,56 @@ def searchTaskByName(user_id, text):
             .filter(Task.title.ilike(search_text))
             .all()
     )
-
     return [task.to_dict_to_send() for task in tasks]
+
+def saveTask(user_id , team_id , task_id): 
+    chk_1 = isMember(user_id=user_id , team_id = team_id) 
+    chk_2 = isTeamTask(team_id=team_id , task_id= task_id)
+    if not chk_1: 
+        print('Loi 1') 
+    if not chk_2: 
+        print('Loi 2') 
+    if (not chk_1) or (not chk_2):
+        return None 
+    stmp = assignment_association.select().where(
+        assignment_association.c.user_id == user_id, 
+        assignment_association.c.task_id == user_id 
+    )
+    res = db.session.execute(stmp) 
+    if res: 
+        return {
+            "success": True, 
+            "message": "You already save this"
+        }
+    stmt = assignment_association.insert().values(
+        user_id = user_id, 
+        task_id = task_id 
+    )
+    db.session.execute(stmt) 
+    db.session.commit() 
+    return {
+        "success": True, 
+        "message": "Save task successfully" 
+    }
+
+def unSavedTask(user_id , task_id): 
+    stmp = assignment_association.select().where(
+        assignment_association.c.user_id == user_id, 
+        assignment_association.c.task_id == user_id 
+    )
+
+    res = db.session.execute(stmp) 
+    if not res: 
+        return None 
+    
+    stmt = assignment_association.delete().where(
+        assignment_association.c.user_id == user_id,
+        assignment_association.c.task_id == task_id
+    )
+    db.session.execute(stmt) 
+    db.session.commit() 
+    return {
+        "success": True, 
+        "message": "Unsave tasks successfully" 
+    }
+
