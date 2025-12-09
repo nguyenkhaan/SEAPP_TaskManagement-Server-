@@ -35,11 +35,13 @@ PyJWT==2.10.1
 PyMySQL==1.1.2
 python-dotenv==1.2.1
 python-env==1.0.0
+python-http-client==3.3.7
 pytz==2025.2
 redis==7.1.0
 requests==2.32.5
 requests-oauthlib==1.1.0
 rsa==4.9.1
+sendgrid==6.12.5
 six==1.17.0
 SQLAlchemy==2.0.44
 typing_extensions==4.15.0

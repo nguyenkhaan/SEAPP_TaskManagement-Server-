@@ -16,7 +16,6 @@ from ..config.mail import mail
 import uuid
 from ..extensions import jwt_blacklist
 
-
 load_dotenv()
 auth_bp = Blueprint('auth', __name__)
 auth_api = Api(auth_bp)
@@ -24,58 +23,63 @@ auth_api = Api(auth_bp)
 class Register(Resource):
     def post(self):
         register_args = register_parser.parse_args()
-        name = register_args['name']
-        email = register_args['email']
+        name = register_args["name"]
+        email = register_args["email"]
 
-        if(getUserByEmail(email)):
+        if getUserByEmail(email):
             return {
                 "success": False,
                 "message": "Registration failed. The email provided is already in use.",
                 "data": None
             }, 409
 
-        password_hash = generate_password_hash(register_args['password'])
-        
+        password_hash = generate_password_hash(register_args["password"])
+
         custom_claims = {
             "email": email,
             "password_hash": password_hash,
             "name": name,
             "purpose": "email_verification",
-            "jti": str(uuid.uuid4().hex) 
+            "jti": str(uuid.uuid4().hex)
         }
 
-        verification_token = create_access_token(identity=email, additional_claims=custom_claims, expires_delta=timedelta(hours=24))
+        verification_token = create_access_token(
+            identity=email,
+            additional_claims=custom_claims,
+            expires_delta=timedelta(hours=24)
+        )
         if isinstance(verification_token, bytes):
-            verification_token = verification_token.decode("utf-8") 
-        # verify_url = url_for('auth.verify', _external=True, token = verification_token )
+            verification_token = verification_token.decode("utf-8")
 
-        verify_url = f'https://seapptaskmanagementclient.vercel.app/verify?token={verification_token}'  # Duong link dung de verify email 
+        verify_url = f"https://seapptaskmanagementclient.vercel.app/verify?token={verification_token}"
 
-        msg = Message('NoTask email verification', recipients=[email])
-        msg.html = f"""<div class="header">
-            <h1>Welcome to NoTask!</h1>
-        </div>
+        html = f"""
+        <div class="header"><h1>Welcome to NoTask!</h1></div>
         <div class="content">
             <p>Hi {name},</p>
-            <p>Thank you for registering with NoTask, your ultimate task management solution. To complete your registration and start managing your tasks efficiently, please verify your email address by clicking the button below:</p>
+            <p>Thank you for registering with NoTask!</p>
             <div class="button-container">
                 <a href="{verify_url}" class="button">Verify My Email</a>
             </div>
-            <p>This link will expire in 24 hours. If you did not sign up for NoTask, please ignore this email.</p>
-            <p>Best regards,</p>
-            <p>The NoTask Team</p>
+            <p>This link will expire in 24 hours.</p>
         </div>
-        <div class="footer">
-            <p>&copy; 2025 NoTask. All rights reserved.</p>
-            <p>NoTask - Your simple solution for task management.</p>
-            <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
-        </div>"""
-        mail.send(msg)
+        """
+
+        # NEW SendGrid API
+        from ...utlis.mail import send_email
+        result = send_email(email, "NoTask email verification", html)
+
+        if not result["success"]:
+            return {
+                "success": False,
+                "message": "Failed to send verification email.",
+                "error": result["error"]
+            }, 500
 
         return {
-            "message": "Verification email sent. Please check your inbox.", 
+            "message": "Verification email sent. Please check your inbox.",
             "token": verification_token
-            }, 200
+        }, 200
         
 
 class Verify(Resource):
