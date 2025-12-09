@@ -294,70 +294,90 @@ class AuthorizeGoogle(Resource):
                 "success": False,
                 "message": "An error occurred during login."
             }, 500
-
 class ForgotPassword(Resource):
     def post(self):
         args = forgot_password_parser.parse_args()
         email = args['email']
-        user = getUserByEmail(email) 
-        if(user == None):
+
+        user = getUserByEmail(email)
+        if user is None:
             return {
                 "success": False,
                 "message": "Email not found.",
                 "data": None
-            }
+            }, 404
+
         user_id = user['id']
         name = user['name']
+
         custom_claims = {
-            'user_id': user_id,
-            'purpose': "reset_password",
-            'jti': uuid.uuid4().hex
+            "user_id": user_id,
+            "purpose": "reset_password",
+            "jti": uuid.uuid4().hex
         }
-        reset_password_token = create_access_token(identity=str(user_id), additional_claims=custom_claims, expires_delta=timedelta(minutes=30))
-        reset_password_page_url = f"https://seapptaskmanagementclient.vercel.app/reset-password?reset_password_token={reset_password_token}"
 
-        msg = Message('Reset Your NoTask Password', recipients=[email])
-        msg.html = f"""<h1>NoTask</h1>
-    
-            <h2>Action Required: Reset Your NoTask Password</h2>
-            
-            <p>Hi {name},</p>
+        reset_password_token = create_access_token(
+            identity=str(user_id),
+            additional_claims=custom_claims,
+            expires_delta=timedelta(minutes=30)
+        )
 
-            <p>We received a request to <b>reset the password</b> for your NoTask account associated with this email address.</p>
+        reset_password_page_url = (
+            "https://seapptaskmanagementclient.vercel.app/reset-password"
+            f"?reset_password_token={reset_password_token}"
+        )
 
-            <p>If you made this request, please click the link below to set a new password.</p>
+        # Email HTML content
+        html = f"""
+        <h1>NoTask</h1>
 
-            <h3>Reset Your Password Now</h3>
+        <h2>Action Required: Reset Your NoTask Password</h2>
 
-            <p>
-                <a href="{reset_password_page_url}">[ Reset Password ]</a>
-            </p>
+        <p>Hi {name},</p>
 
-            <p>
-                This link will expire in 30 minutes to ensure the security of your account. If the link expires, you will need to submit a new password reset request.
-            </p>
+        <p>We received a request to <b>reset the password</b> for your NoTask account.</p>
 
-            <hr>
+        <p>If you made this request, click below to set a new password:</p>
 
-            <h3>Did Not Request This?</h3>
-            <p>
-                If you <b>did not request</b> a password reset, please <b>ignore this email</b>. Your password will remain unchanged.
-                For security reasons, do not forward this email to anyone.
-            </p>
-            
-            <p>If you have any questions or concerns about your account security, please contact our support team immediately.</p>
+        <p>
+            <a href="{reset_password_page_url}">
+                <b>[ Reset Password ]</b>
+            </a>
+        </p>
 
-            <p>Thank you,</p>
-            <p>The NoTask Team</p>
+        <p>This link expires in <b>30 minutes</b>. If expired, you must submit a new request.</p>
 
-            <p><small>*Note: This is an automated email. Please do not reply to this address.</small></p>"""
-        mail.send(msg)
+        <hr>
+
+        <h3>Didn't Request This?</h3>
+        <p>
+            If you <b>did not request</b> a password reset, simply ignore this email.
+            Your account remains safe.
+        </p>
+
+        <p>Thank you,<br>NoTask Team</p>
+
+        <p><small>This is an automated email. Do not reply.</small></p>
+        """
+        from ..mail_api.mail import send_email 
+        result = send_email(
+            to=email,
+            subject="Reset Your NoTask Password",
+            html=html
+        )
+
+        if not result["success"]:
+            return {
+                "success": False,
+                "message": "Failed to send password reset email.",
+                "error": result["error"]
+            }, 500
 
         return {
-            "message": "Reset password email sent. Please check your inbox.", 
+            "success": True,
+            "message": "Reset password email sent. Please check your inbox.",
             "reset_password_token": reset_password_token
-            }, 200
-
+        }, 200
 # Khi người dùng bấm vào link reset mật khẩu trong mail sẽ được điều hướng tới trang reset mật khẩu có url chứa query params là token chứa id người dùng đó, sau khi người dùng nhập mật khẩu mới thì mới gửi req chứa token đó và password mới về server thông qua ResetPassword endpoint. Server nhận được token đó sẽ bóc ra kiểm tra purpose có đúng chưa, nếu đúng thì lấy user_id từ token ra, đặt lại mật khẩu cho người dùng đó bằng mật khẩu mới.
 
 class SetNewPassword(Resource):
