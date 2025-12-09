@@ -207,6 +207,9 @@ def getAllUserTasksGroupedByTeam(user_id):
                 "title": task.title,
                 "description": task.description,
                 "dueTime": task.due_time.isoformat() + 'Z' if task.due_time else None,
+                "status": task.status, 
+                "important": task.important, 
+                "urgent": task.urgent 
             }
             for task in tasks_query
         ]
