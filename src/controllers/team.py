@@ -68,7 +68,7 @@ class Teams(Resource):
         name = data.get('teamName')
         icon = data.get('icon')
         banner = data.get('banner')
-        description = data.get('description')
+        description = data.get('teamDescription')
 
         # Tao team moi
         new_team = Team()
