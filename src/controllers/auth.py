@@ -126,7 +126,6 @@ class Login(Resource):
         email = login_args.get('email')
         password = login_args.get('password')
         user = checkUser(email = email, password = password)
-        print(user) 
         if(user):
             access_token = create_access_token(identity=str(user['id']), additional_claims={'login_method': 'account', 'jti': uuid.uuid4().hex})
             if isinstance(access_token, bytes):
@@ -167,7 +166,6 @@ class LoginGoogle(Resource):
         # Ham nay dung de thuc hien verify token tu google 
         args = login_google_parser.parse_args()
         verfication_code = args.get('code') 
-        print('Ma code la: ' , verfication_code)
         if not verfication_code: 
             return {
                 "success": False, 
@@ -175,7 +173,6 @@ class LoginGoogle(Resource):
             } , 400 
         verify_result = getUserInfoFromCode(verfication_code) # Verification from google code 
         if not verify_result: 
-            print('Ma khong hop le ') 
             return {
                 "success": False, 
                 "message": "Code is invalid"
@@ -194,9 +191,7 @@ class LoginGoogle(Resource):
         access_token = create_access_token(identity=str(id), additional_claims={'login_method': 'google', 'jti': uuid.uuid4().hex})
         if isinstance(access_token, bytes):
             access_token = access_token.decode("utf-8") 
-        print(access_token) 
         if not access_token: 
-            print('Khoi tao that bai')
             return {
                 "success": False, 
                 "message": "create login code failed" 

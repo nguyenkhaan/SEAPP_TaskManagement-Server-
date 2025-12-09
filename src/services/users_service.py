@@ -199,7 +199,6 @@ def getTokenFromCode(code):
         'grant_type': 'authorization_code' 
     }
     r = requests.post(url , data=data , headers=headers) 
-    print('Du lieu nhan duoc la: ' , r) 
     if r: 
         return dict(r.json()).get('id_token') 
     return None 
@@ -208,7 +207,6 @@ def getUserInfoFromCode(code):
     if not response_token_data: 
         return None 
     user_data = decode_google_token(response_token_data) 
-    print(user_data) 
     if user_data:   #user_data duoc decode thanh cong  
         return user_data 
     return None  #user_data decode that bai 

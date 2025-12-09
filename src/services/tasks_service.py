@@ -488,10 +488,6 @@ def searchTaskByName(user_id, text):
 def saveTask(user_id , team_id , task_id): 
     chk_1 = isMember(user_id=user_id , team_id = team_id) 
     chk_2 = isTeamTask(team_id=team_id , task_id= task_id)
-    if not chk_1: 
-        print('Loi 1') 
-    if not chk_2: 
-        print('Loi 2') 
     if (not chk_1) or (not chk_2):
         return None 
     stmp = assignment_association.select().where(

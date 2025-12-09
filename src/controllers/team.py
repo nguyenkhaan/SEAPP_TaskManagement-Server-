@@ -78,7 +78,6 @@ class Teams(Resource):
         new_team.leader = db.session.query(User).filter(User.id == current_user_id).first()
         new_team.banner_url = None
         new_team.icon_url = None
-        print(icon , banner)
         if icon:
             url = uploadTeamImage(new_team , icon.read() , 'icon')
             if not(url):
@@ -93,7 +92,7 @@ class Teams(Resource):
             new_team.banner_url = None
 
         db.session.add(new_team)
-        db.session.commit()
+        db.session.flush() 
 
         # Goi ham de tao ma code
         code = createCodeForTeam(new_team.id , 604800) # Tao ma code de tham gia nhom
@@ -172,14 +171,12 @@ class TeamJoinCode(Resource):
                 "Success": False,
                 "message": "Missing time to create team code"
             } , 400
-        print(id , time)
         if id is None:
             return {
                 "Success": False,
                 "Message": "Team not found"
             } , 400
         code = createCodeForTeam(id , int(time))
-        print(code)
         if code is None:
             return {
                 "Success": False,
@@ -224,7 +221,6 @@ class TeamCode(Resource):
             } , 401 
         data = dict(create_new_team_code_parser.parse_args())
         team_id = data.get('teamID') 
-        print(team_id) 
         is_lead = isLeader(user_id=current_user_id , team_id=team_id) 
         is_vice_lead = isViceLeader(user_id=current_user_id , team_id = team_id) 
         if is_lead or is_vice_lead: 
