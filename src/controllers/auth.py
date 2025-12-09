@@ -66,7 +66,7 @@ class Register(Resource):
         """
 
         # NEW SendGrid API
-        from ...utlis.mail import send_email
+        from ..mail_api.mail import send_email 
         result = send_email(email, "NoTask email verification", html)
 
         if not result["success"]:
