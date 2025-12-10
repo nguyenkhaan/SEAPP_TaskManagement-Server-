@@ -56,9 +56,6 @@ def isTeam(id):
 
 def createCode(): 
     code = randomCode(8) 
-    exists = db.session.query(1).filter(InviteCode.code == code).first() 
-    if exists: 
-        code = randomCode(9) 
     return code 
 
 def isUserMember(userID , teamID): 
