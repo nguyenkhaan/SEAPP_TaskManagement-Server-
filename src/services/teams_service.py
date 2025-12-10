@@ -383,19 +383,16 @@ def deleteUserFromGroup(userID , teamID):
         (team_member_association.c.user_id == userID) & 
         (team_member_association.c.team_id == teamID) 
     )
+    db.session.execute(stmt) 
     # Thuc hien xoa nhung cai duoc giao cho userID bi xoa 
-    tasks = db.session.query(Task.id).filter(Task.team_id == teamID).all() 
+    tasks = db.session.query(Task).filter(Task.team_id == teamID).all() 
     stmp = assignment_association.delete().where(
-        (assignment_association.c.task_id.in_([t[0] for t in tasks])) & 
+        (assignment_association.c.task_id.in_([t.id for t in tasks])) & 
         (assignment_association.c.user_id == userID)
     )
-    
+    db.session.execute(stmp) 
     for x in tasks: 
         db.session.delete(x) 
-    
-    
-    db.session.execute(stmt) # Thuc hien cau lenh 1 
-    db.session.execute(stmp) # Thuc hien cau lenh 2 
     db.session.commit() 
     return True 
 
