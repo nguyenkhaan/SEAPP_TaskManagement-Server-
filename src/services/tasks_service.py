@@ -250,10 +250,21 @@ def getTaskDetail(user_id, task_id):
     task_data = map_task_to_dict(task)
     task_data.pop('teamName', None)
     leader_id = db.session.query(Team.leader_id).filter(Team.id == team_id).first()   # Tien hanh lay ra leader_id 
+    vice_leader_id = db.session.query(Team.vice_leader_id).filter(Team.id == team_id).first() 
+    
     can_assign = False 
+    can_delete = False 
+    
     if int(user_id) == int(leader_id[0]): 
         can_assign = True  # Thogn bao chi co leader moi duoc tien hanh gan nhiem vu 
-    print('Kha nang gan lai: ' , can_assign)
+
+    if int(user_id) == int(leader_id[0]) or (vice_leader_id and (int(vice_leader_id[0]) == user_id)): 
+        can_delete = True 
+    # print('Kha nang gan lai: ' , can_assign)
+    user_ids = db.session.query(assignment_association.c.user_id).filter(
+        assignment_association.c.task_id == task_id
+    ).all()
+    assignIds = [user_id[0] for user_id in user_ids]
     return {
         "success": True,
         "data": {
@@ -261,7 +272,9 @@ def getTaskDetail(user_id, task_id):
             "assignees": assignees
         }, 
         "teamId": team_id, 
-        "canAssign": can_assign
+        "canAssign": can_assign, 
+        "assignIds": assignIds, 
+        "canDelete": can_delete 
     }
 
 
