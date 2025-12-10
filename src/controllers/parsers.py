@@ -96,7 +96,6 @@ create_task_parser.add_argument(
     location='json',
     help="Urgent flag must be boolean (true/false)"
 )
-
 create_task_parser.add_argument('assigneeIds', type=str,
                                 required=False, location='json', action='append')
 
@@ -127,7 +126,13 @@ update_task_parser.add_argument(
     required=False,
     location='json'
 )
+update_task_parser.add_argument(
+    'assignIds', 
+    type=list,
+    required = True, 
+    location = 'json' # Gui danh ngui dung can updatw  
 
+)
 #search task
 search_tasks_parser = reqparse.RequestParser()
 search_tasks_parser.add_argument('q', type=str,

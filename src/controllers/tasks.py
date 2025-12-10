@@ -17,7 +17,8 @@ from ..services.tasks_service import (
     getTeamTasks, 
     searchTaskByName, 
     saveTask, 
-    unSavedTask 
+    unSavedTask, 
+    getUsersDoTask
 )
 
 tasks_bp = Blueprint('tasks', __name__)
@@ -170,7 +171,23 @@ class TaskSaving(Resource):
                 "message": "Unsave failed"
             } , 401 
         return result
-    
+class TaskUser(Resource): 
+    @jwt_required() 
+    def get(self , taskId): 
+        # Lay danh sach nguoi dung lam 1 task 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Toke is failed or invalid "
+            } , 401 
+        
+        data = getUsersDoTask(taskId) 
+        return {
+            "success": True, 
+            "message": "This is all the user do the tasks", 
+            "data": data 
+        }    
 tasks_api.add_resource(TaskStatistics, '/statistics')
 tasks_api.add_resource(TaskStatisticsByTeam, '/statistics/teams/<string:teamId>')
 tasks_api.add_resource(TasksOverview, '/overview')
@@ -180,3 +197,4 @@ tasks_api.add_resource(TaskFilter, '/filter')
 tasks_api.add_resource(TeamTasksResource, '/teams/<string:teamId>/tasks')
 tasks_api.add_resource(TaskSearch , '/search-tasks/user')
 tasks_api.add_resource(TaskSaving , '/save/user')
+tasks_api.add_resource(TaskUser , '/users/<int:taskId>')

@@ -414,3 +414,10 @@ def createNewTeamCode(teamID):
     team_code.time_expired = time_expred
     db.session.commit() 
     return code 
+
+def getUserIdTeam(teamID):
+    users = db.session.query(User).with_entities(User.id, User.name).join(
+    team_member_association, team_member_association.c.user_id == User.id).filter(team_member_association.c.team_id == int(teamID)).all()
+    print(users) 
+    users = [{"userID": u.id, "name": u.name} for u in users]   
+    return users 

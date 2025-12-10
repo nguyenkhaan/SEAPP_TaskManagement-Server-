@@ -249,7 +249,11 @@ def getTaskDetail(user_id, task_id):
     assignees, _ = getTaskUser(task_id)
     task_data = map_task_to_dict(task)
     task_data.pop('teamName', None)
-
+    leader_id = db.session.query(Team.leader_id).filter(Team.id == team_id).first()   # Tien hanh lay ra leader_id 
+    can_assign = False 
+    if int(user_id) == int(leader_id[0]): 
+        can_assign = True  # Thogn bao chi co leader moi duoc tien hanh gan nhiem vu 
+    print('Kha nang gan lai: ' , can_assign)
     return {
         "success": True,
         "data": {
@@ -280,11 +284,22 @@ def updateTaskById(user_id, task_id, data):
                 if key == 'due_time' and value is not None and isinstance(value, str):
                     value = datetime.fromisoformat(value.replace('Z', '+00:00'))
 
-
-
                 setattr(task, key, value)
-
-        db.session.commit()
+        if (isLeader(user_id , team_id)): 
+            assignIds = data.get('assignIds')
+            # Code tiep phan o day -> Chay va tien hanh gan lai thong tin nguoi dung 
+            stmt = assignment_association.delete().where(
+                assignment_association.c.task_id == task_id 
+            )
+            if assignIds: 
+                db.session.execute(stmt) 
+                for id in assignIds: 
+                    stmt = assignment_association.insert().values(
+                        user_id = id, 
+                        task_id = task_id 
+                    )
+                    db.session.execute(stmt) 
+            db.session.commit()
 
         return {
             "success": True,
@@ -387,7 +402,8 @@ def createTask(user_id, team_id, data):
     team = db.session.get(Team, team_id)
     if not team:
         return {"success": False, "error": {"code": "NOT_FOUND", "message": "Team not found."}}, 404
-
+    if (not isLeader(user_id , team_id)) and (not isViceLeader(user_id , team_id)):  # Chi c leader moi duoc tao task 
+        return {"success": False , "message": "You don't have enough permission to do this"} , 404   
     try:
         due_time_obj = data.get('dueTime')
         if due_time_obj and isinstance(due_time_obj, str):
@@ -535,3 +551,16 @@ def unSavedTask(user_id , task_id):
         "message": "Unsave tasks successfully" 
     }
 
+def getUsersDoTask(taskID): 
+    datas = db.session.query(User.id , User.name).join(assignment_association , assignment_association.c.user_id == User.id).filter(assignment_association.c.task_id == taskID).all() 
+    datas = [
+        {
+            "userID" : data[0], 
+            "name": data[1] 
+        }
+        for data in datas 
+    ]
+    return datas 
+
+
+#update task by IS, getUserDoTask, them endpoint vaoo task 

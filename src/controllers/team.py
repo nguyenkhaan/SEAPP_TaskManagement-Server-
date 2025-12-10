@@ -13,8 +13,7 @@ from ..utils import getImageUrl
 from ..services.teams_service import uploadTeamImage, isUserMember, addMemberToTeam, getTeamCode
 
 from .parsers import create_new_team_parser, update_team_parser  , user_leave_parser , leader_kick_parser, user_role_parser , team_code_parser , create_new_team_code_parser
-from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup , createNewTeamCode
-
+from ..services.teams_service import update_team, delete_team, isUser, isLeader , isViceLeader ,  deleteUserFromGroup , createNewTeamCode, getUserIdTeam
 
 # Phai import theo kieu relative path ntn, bo dau . o dau di thi se thanh absolute path
 
@@ -395,9 +394,50 @@ class LeaderKickUser(Resource):
             "success": True,
             "message": "Kick successfully"
         }
+# for task assignment 
+class UsersFromTeamID(Resource): 
+    # Dung de lay danh sach toan bo nguoi dung co the gan 
+    @jwt_required() 
+    def get(self , teamID): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Code or token invalid" 
+            } , 401 
+        users = getUserIdTeam(teamID) 
+        return {
+            "success": True, 
+            "message": "This is all the users id", 
+            "data": users 
+        }
+class UsersFromTaskID(Resource): 
+    @jwt_required() 
+    def get(self , taskID): 
+        current_user_id = int(get_jwt_identity()) 
+        if not current_user_id: 
+            return {
+                "success": False, 
+                "message": "Code or token invalid" 
+            } , 401 
+        teamID = db.session.query(Task.team_id).filter(Task.id == taskID).first() 
+        if not teamID: 
+            return {
+                "success": False, 
+                "message": "Team not found" 
+            } , 401 
+        teamID = int(teamID[0]) 
+        users = getUserIdTeam(teamID) 
+        return {
+            "success": True, 
+            "message": "This is all the users id", 
+            "data": users 
+        }
 team_api.add_resource(Teams , '/' , '/<int:id>')
 team_api.add_resource(UserWithTeam , '/user')
 team_api.add_resource(TeamJoinCode , '/<int:id>/join-code')
 team_api.add_resource(TeamJoin , '/join')
 team_api.add_resource(TeamRole , '/role')
 team_api.add_resource(TeamCode , '/code/team')
+team_api.add_resource(UsersFromTeamID , '/user/assign/<int:teamID>') 
+team_api.add_resource(UsersFromTaskID , '/user/assign/task/<int:taskID>')
