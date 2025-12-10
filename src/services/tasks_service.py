@@ -258,8 +258,11 @@ def getTaskDetail(user_id, task_id):
     if int(user_id) == int(leader_id[0]): 
         can_assign = True  # Thogn bao chi co leader moi duoc tien hanh gan nhiem vu 
 
-    if int(user_id) == int(leader_id[0]) or (vice_leader_id and (int(vice_leader_id[0]) == user_id)): 
+    if int(user_id) == int(leader_id[0]): 
         can_delete = True 
+    elif vice_leader_id is not None: 
+        if int(vice_leader_id[0] == user_id): 
+            can_delete = True 
     # print('Kha nang gan lai: ' , can_assign)
     user_ids = db.session.query(assignment_association.c.user_id).filter(
         assignment_association.c.task_id == task_id
