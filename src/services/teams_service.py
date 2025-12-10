@@ -391,8 +391,6 @@ def deleteUserFromGroup(userID , teamID):
         (assignment_association.c.user_id == userID)
     )
     db.session.execute(stmp) 
-    for x in tasks: 
-        db.session.delete(x) 
     db.session.commit() 
     return True 
 
