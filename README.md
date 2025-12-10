@@ -105,7 +105,7 @@ python -m main.py
 npm run dev  
 ```
 ### 6. Production 
-- You can visit [this website](http://localhost:5173) 
+- You can visit [this website](https://seapptaskmanagementclient.vercel.app) 
 ## 🧩 Main Technologies 
 ### 1. Front-end
 - **Javascript - Typescript** & logic resolve
