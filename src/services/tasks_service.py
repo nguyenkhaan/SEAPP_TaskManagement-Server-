@@ -260,7 +260,8 @@ def getTaskDetail(user_id, task_id):
             **task_data,
             "assignees": assignees
         }, 
-        "teamId": team_id 
+        "teamId": team_id, 
+        "canAssign": can_assign
     }
 
 
